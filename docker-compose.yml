@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  db:
+    image: ankane/pgvector:latest  # Postgres + pgvector ready
+    restart: always
+    environment:
+      POSTGRES_USER: bryan
+      POSTGRES_PASSWORD: supersecret
+      POSTGRES_DB: emotrack
+    ports:
+      - "5432:5432"  
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://bryan:supersecret@db:5432/emotrack
+
+  frontend:
+    build: ./frontend
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
