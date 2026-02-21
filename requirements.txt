@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+onnxruntime==1.19.2  # CPU version, si GPU local después: onnxruntime-gpu
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+sqlalchemy==2.0.35
+JWT==1.4.4
+psycopg2-binary==2.9.9
+pgvector==0.3.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+websockets==13.1
