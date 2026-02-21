@@ -219,6 +219,17 @@ notes.txt
 
 #Ingore private floder
 privates/
-
-
+#Ignore all onnx models 
 *.onnx
+
+# Ingore Frontend Node Module Folder
+node_modules/
+
+#Ignore dist/
+dist
+
+#Ignore database scripts
+
+db_script.sql
+
+
