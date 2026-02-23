@@ -9,6 +9,7 @@ from app.api.dependencies import get_user_from_token
 from app.services.inference_engine import inference_engine
 from app.utils.image_processing import decode_base64_image, align_face
 from app.services.face_math import verify_biometric_match
+from app.models.emotions import Emotion 
 
 router = APIRouter()
 
@@ -100,6 +101,29 @@ async def websocket_endpoint(
                 
                 emotion_result = inference_engine.detect_emotion(aligned_face)
                 response_data["emotion"] = emotion_result
+                
+                
+                try:
+                    # Extract data from your inference engine's output dictionary
+                    dominant = emotion_result.get("dominant_emotion", "neutral")
+                    confidence = emotion_result.get("confidence", 0.0)
+                    scores = emotion_result.get("emotion_scores", {})
+
+                    # Create the record using the SQLAlchemy model
+                    new_emotion_record = Emotion(
+                        user_id=user.id,
+                        dominant_emotion=dominant,
+                        confidence=float(confidence),  # Cast to float to avoid numpy type issues
+                        emotion_scores=scores          # PostgreSQL will automatically cast this dict to JSONB
+                    )
+                    
+                    db.add(new_emotion_record)
+                    db.commit()
+                    
+                except Exception as db_error:
+                    # Rollback the transaction on error so the session isn't poisoned
+                    db.rollback()
+                    print(f"Failed to save emotion to DB for user {user.id}: {str(db_error)}")
 
             
             await manager.send_personal_json(response_data, user.id)

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean
 from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
 from app.core.database import Base
+from sqlalchemy.orm import relationship
 
 class User(Base):
     """
@@ -23,7 +24,8 @@ class User(Base):
     # ArcFace outputs a 512-dimensional normalized vector.
     # The Vector(512) type allows for efficient similarity searches using pgvector.
     face_embedding = Column(Vector(512), nullable=True)
-    
+    #One-To-Many relationship
+    emotions =  relationship("Emotion", back_populates="user")
     # Metadata for auditing and tracking
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

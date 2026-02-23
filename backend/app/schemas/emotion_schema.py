@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Dict, Optional
 from datetime import datetime
 
 class EmotionBase(BaseModel):
@@ -16,6 +16,11 @@ class EmotionBase(BaseModel):
         le=1.0, 
         description="Confidence probability from the HSEmotion EfficientNet model"
     )
+    emotion_scores: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Full probability distribution across all detected emotion classes."
+    )
+    
     user_note: Optional[str] = Field(
         None, 
         max_length=500, 
