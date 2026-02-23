@@ -6,11 +6,11 @@ from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.user import User
+from app.models.users import User
 from app.core.security import ALGORITHM
 
 # This schema is used internally to validate the token payload structure.
-# It does not need to be exposed in the main schemas folder.
+
 class TokenPayload(BaseModel):
     sub: str = None
 
@@ -111,3 +111,40 @@ def get_current_active_superuser(
             detail="Inactive user account"
         )
     return current_user
+
+async def get_user_from_token(token: str, db: Session) -> User:
+
+    """
+
+        Validates the JWT token passed via the WebSocket connection URL.
+
+        Args:
+
+        token (str): The JWT string.
+
+        db (Session): The active database session.
+
+        Returns:
+
+        User: The authenticated user object, or None if validation fails.
+
+    """
+
+    try:
+
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+
+        user_id = payload.get("sub")
+
+        if user_id is None:
+
+            return None
+
+
+        user = db.query(User).filter(User.id == int(user_id)).first()
+
+        return user
+
+    except JWTError:
+
+        return None

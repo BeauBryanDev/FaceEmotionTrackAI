@@ -9,8 +9,12 @@ class UserBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100, description="User's full name")
     email: EmailStr = Field(..., description="Valid email address for authentication")
     age: Optional[int] = Field(None, ge=13, le=120, description="User's age in years")
-    phone_number: Optional[str] = Field(None, regex=r'^\+?[1-9]\d{1,14}$', description="Phone number in E.164 format")
-    gender: Optional[str] = Field(None, regex=r'^[MF]$', description="User's gender")
+    phone_number: Optional[str] = Field(
+        None, 
+        pattern=r'^\+?[1-9]\d{1,14}$', 
+        description="Número de teléfono en formato E.164 (ej. +1234567890)"
+    )
+    gender: Optional[str] = Field(None, pattern=r'^[MF]$', description="Género del usuario")
 
 class UserCreate(UserBase):
     """
@@ -36,3 +40,40 @@ class UserResponse(UserBase):
         but an ORM model (SQLAlchemy).
         """
         from_attributes = True
+        
+        
+class UserUpdate(UserBase):
+    """
+    Schema for updating user data.
+    """
+    password: Optional[str] = Field(
+        None, 
+        min_length=8, 
+        description="New password for the user. Leave blank to keep the current password."
+    )
+    age: Optional[int] = Field(
+        None, 
+        ge=13, 
+        le=120, 
+        description="New age for the user. Leave blank to keep the current age."
+    )
+    phone_number: Optional[str] = Field(
+        None, 
+        pattern=r'^\+?[1-9]\d{1,14}$', 
+        description="New phone number for the user. Leave blank to keep the current phone number."
+    )
+    gender: Optional[str] = Field(
+        None, 
+        pattern=r'^[MF]$', 
+        description="New gender for the user. Leave blank to keep the current gender."
+    )   
+    
+    class Config:
+        """
+        Tells Pydantic to read the data even if it is not a dict, 
+        but an ORM model (SQLAlchemy).
+        """
+        from_attributes = True      
+        
+    
+    

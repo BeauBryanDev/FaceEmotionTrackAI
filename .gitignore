@@ -233,3 +233,4 @@ dist
 db_script.sql
 
 
+db_test_script.py

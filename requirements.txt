@@ -11,3 +11,8 @@ pgvector==0.3.6
 pydantic==2.9.2
 pydantic-settings==2.5.2
 websockets==13.1
+
+# --- Documentation ---
+mkdocs==1.4.3
+mkdocs-material==9.4.6
+mkdocs-minify-plugin==0.6.4

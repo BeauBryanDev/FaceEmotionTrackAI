@@ -90,3 +90,57 @@ def prepare_tensor_for_onnx(
     tensor = np.expand_dims(chw_image, axis=0)
     
     return tensor
+
+
+# Standard reference facial landmarks for ArcFace 112x112 input.
+# These specific coordinates represent the ideal positions for the 
+# left eye, right eye, nose, left mouth, and right mouth.
+ARCFACE_REFERENCE_LANDMARKS = np.array([
+    [38.2946, 51.6963],
+    [73.5318, 51.5014],
+    [56.0252, 71.7366],
+    [41.5493, 92.3655],
+    [70.7299, 92.2041]
+], dtype=np.float32)
+
+def align_face(
+    image: np.ndarray, 
+    landmarks: np.ndarray, 
+    output_size: Tuple[int, int] = (112, 112)
+) -> np.ndarray:
+    """
+    Aligns and crops a face from an image using an Affine Transformation based on 5 landmarks.
+    
+    This function computes the optimal transformation matrix to map the detected 
+    facial landmarks to the standard ArcFace reference coordinates, ensuring 
+    consistent input for the recognition and emotion models.
+    
+    Args:
+        image (np.ndarray): The original full-frame BGR image.
+        landmarks (np.ndarray): A 5x2 array containing the (x, y) coordinates of the detected landmarks.
+        output_size (Tuple[int, int]): The required input size for the subsequent ONNX models.
+        
+    Returns:
+        np.ndarray: The aligned and cropped face image of shape (output_size[1], output_size[0], 3).
+    """
+    # Estimate the partial affine transformation matrix (rotation, translation, and scaling).
+    # We use estimateAffinePartial2D because it restricts the transformation to rigid 
+    # movements, preventing unnatural shearing of the facial features.
+    transformation_matrix, inliers = cv2.estimateAffinePartial2D(
+        landmarks, 
+        ARCFACE_REFERENCE_LANDMARKS, 
+        method=cv2.LMEDS
+    )
+    
+    # Apply the calculated matrix to warp the original image.
+    # borderValue=(0, 0, 0) ensures that any pixels pulled in from outside the original
+    # image boundaries are filled with black padding.
+    aligned_face = cv2.warpAffine(
+        image, 
+        transformation_matrix, 
+        output_size, 
+        borderValue=(0, 0, 0),
+        flags=cv2.INTER_CUBIC
+    )
+    
+    return aligned_face
