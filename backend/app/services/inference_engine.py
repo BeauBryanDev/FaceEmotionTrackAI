@@ -80,8 +80,8 @@ class InferenceEngine:
             # This centers the data around 0 with a standard deviation of 1.
             input_tensor = prepare_tensor_for_onnx(
                 resized_image, 
-                mean=127.5 / 255.0, 
-                std=128.0 / 255.0
+                mean= 127.5 / 255.0, 
+                std= 128.0 / 255.0
             )
             
             # Execute the ONNX runtime session
@@ -102,32 +102,156 @@ class InferenceEngine:
             
             return faces
 
+    
+    # def _decode_scrfd_outputs(self, raw_outputs: list, threshold: float, input_size: tuple, original_size: tuple) -> list:
+    #     # SCRFD Outputs: [score_8, score_16, score_32, bbox_8, bbox_16, bbox_32, kps_8, kps_16, kps_32]
+    #     # Nota: El orden puede variar según la exportación del ONNX. 
+    #     # Esta lógica asume el formato estándar de InsightFace.
+        
+    #     scores_list = raw_outputs[0:3]
+    #     bboxes_list = raw_outputs[3:6]
+    #     kps_list = raw_outputs[6:9]
+        
+    #     total_faces = []
+    #     strides = [8, 16, 32]
+        
+    #     for i, stride in enumerate(strides):
+    #         scores = scores_list[i]
+    #         bboxes = bboxes_list[i] * stride
+    #         kps = kps_list[i] * stride
+            
+    #         height, width = input_size[0] // stride, input_size[1] // stride
+            
+    #         # Generar anchors (puntos de rejilla) para este stride
+    #         anchor_grid = np.stack(np.meshgrid(np.arange(width), np.arange(height)), axis=-1)
+    #         anchor_grid = (anchor_grid * stride).reshape((-1, 2))
+            
+    #         # Filtrar por threshold
+    #         pos_indices = np.where(scores.flatten() > threshold)[0]
+            
+    #         for idx in pos_indices:
+    #             conf = scores.flatten()[idx]
+    #             anchor = anchor_grid[idx]
+                
+    #             # Decodificar Bounding Box (Distancias desde el anchor)
+    #             reg_bbox = bboxes.reshape((-1, 4))[idx]
+    #             xmin = anchor[0] - reg_bbox[0]
+    #             ymin = anchor[1] - reg_bbox[1]
+    #             xmax = anchor[0] + reg_bbox[2]
+    #             ymax = anchor[1] + reg_bbox[3]
+                
+    #             # Decodificar Landmarks (5 puntos)
+    #             reg_kps = kps.reshape((-1, 10))[idx]
+    #             landmarks = []
+    #             for k in range(0, 10, 2):
+    #                 px = anchor[0] + reg_kps[k]
+    #                 py = anchor[1] + reg_kps[k+1]
+    #                 landmarks.append([px, py])
+                
+    #             total_faces.append({
+    #                 "bbox": [xmin, ymin, xmax, ymax],
+    #                 "score": float(conf),
+    #                 "landmarks": np.array(landmarks)
+    #             })
+
+    #     # Aplicar NMS (Non-Maximum Suppression) para evitar cajas duplicadas
+    #     return self._apply_nms(total_faces, iou_threshold=0.4, original_size=original_size, input_size=input_size)
+    
+    
     def _decode_scrfd_outputs(self, raw_outputs: list, threshold: float, input_size: tuple, original_size: tuple) -> list:
-        """
-        Internal method to decode the raw ONNX output tensors into usable coordinates.
+        # El orden confirmado de los tensores es:
+        # [0:3] -> Scores (12800, 3200, 800)
+        # [3:6] -> BBoxes (12800x4, 3200x4, 800x4)
+        # [6:9] -> KPS / Landmarks (12800x10, 3200x10, 800x10)
         
-        Note: Fully implementing anchor decoding and NMS in pure NumPy is highly complex 
-        and often abstracted via libraries like 'insightface'. For this portfolio architecture, 
-        we structure the parser to show where the coordinate scaling must occur.
-        """
-        faces  = []
+        scores_list = raw_outputs[0:3]
+        bboxes_list = raw_outputs[3:6]
+        kps_list = raw_outputs[6:9]
         
-        # Example structural parsing (Mocked for architectural demonstration)
-        # Real implementation requires iterating over strides (8, 16, 32),
-        # generating anchor centers, applying regressions, and filtering via NMS.
+        total_faces = []
+        strides = [8, 16, 32]
         
-        # Calculate scale ratios to map the 640x640 bounding boxes back to the original webcam resolution.
-        height_ratio = original_size[0] / input_size[0]
-        width_ratio = original_size[1] / input_size[1]
+        for i, stride in enumerate(strides):
+            scores = scores_list[i]
+            bboxes = bboxes_list[i] * stride
+            kps = kps_list[i] * stride
+            
+            height = input_size[0] // stride
+            width = input_size[1] // stride
+            
+            # EL DETALLE CLAVE: Calcular cuántos anchors por píxel usa el modelo (12800 / 6400 = 2)
+            num_anchors = scores.shape[0] // (height * width)
+            
+            # Generar rejilla base (X, Y)
+            X, Y = np.meshgrid(np.arange(width), np.arange(height))
+            anchor_grid = np.stack([X, Y], axis=-1)
+            anchor_grid = (anchor_grid * stride).reshape((-1, 2))
+            
+            # Repetir la rejilla para que coincida con los 12800/3200/800 tensores
+            anchor_grid = np.repeat(anchor_grid, num_anchors, axis=0)
+            
+            # Filtrar por threshold
+            scores_flat = scores.flatten()
+            pos_indices = np.where(scores_flat > threshold)[0]
+            
+            for idx in pos_indices:
+                conf = scores_flat[idx]
+                anchor = anchor_grid[idx]
+                
+                # Decodificar Bounding Box (xmin, ymin, xmax, ymax)
+                reg_bbox = bboxes.reshape((-1, 4))[idx]
+                xmin = anchor[0] - reg_bbox[0]
+                ymin = anchor[1] - reg_bbox[1]
+                xmax = anchor[0] + reg_bbox[2]
+                ymax = anchor[1] + reg_bbox[3]
+                
+                # Decodificar Landmarks (5 puntos = 10 coordenadas)
+                reg_kps = kps.reshape((-1, 10))[idx]
+                landmarks = []
+                for k in range(0, 10, 2):
+                    px = anchor[0] + reg_kps[k]
+                    py = anchor[1] + reg_kps[k+1]
+                    landmarks.append([px, py])
+                
+                total_faces.append({
+                    "bbox": [xmin, ymin, xmax, ymax],
+                    "score": float(conf),
+                    "landmarks": np.array(landmarks)
+                })
+
+        return self._apply_nms(total_faces, iou_threshold=0.4, original_size=original_size, input_size=input_size)
+    
+
+    def _apply_nms(self, faces, iou_threshold, original_size, input_size):
+        if not faces: return []
         
-        # Assuming the post-processing yields a valid face:
-        # faces.append({
-        #     "bbox": [xmin * width_ratio, ymin * height_ratio, xmax * width_ratio, ymax * height_ratio],
-        #     "score": confidence_score,
-        #     "landmarks": scaled_landmarks
-        # })
+        # Ordenar por score
+        faces.sort(key=lambda x: x['score'], reverse=True)
+        keep = []
         
-        return faces      
+        while faces:
+            best_face = faces.pop(0)
+            keep.append(best_face)
+            faces = [f for f in faces if self._compute_iou(best_face['bbox'], f['bbox']) < iou_threshold]
+            
+        # Escalar coordenadas de vuelta al tamaño original
+        h_ratio = original_size[0] / input_size[0]
+        w_ratio = original_size[1] / input_size[1]
+        
+        for f in keep:
+            f['bbox'] = [f['bbox'][0]*w_ratio, f['bbox'][1]*h_ratio, f['bbox'][2]*w_ratio, f['bbox'][3]*h_ratio]
+            f['landmarks'][:, 0] *= w_ratio
+            f['landmarks'][:, 1] *= h_ratio
+            
+        return keep
+
+    def _compute_iou(self, boxA, boxB):
+        xA = max(boxA[0], boxB[0]); yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2]); yB = min(boxA[3], boxB[3])
+        interArea = max(0, xB - xA) * max(0, yB - yA)
+        boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+        boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+        return interArea / float(boxAArea + boxBArea - interArea)    
     
     
     def get_face_embedding(self, aligned_face: np.ndarray) -> np.ndarray:

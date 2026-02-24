@@ -234,3 +234,7 @@ db_script.sql
 
 
 db_test_script.py
+
+#Ignore all images
+
+**/*.{jpg,jpeg,png}
