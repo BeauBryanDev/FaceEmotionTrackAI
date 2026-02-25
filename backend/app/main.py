@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import get_db, init_db
 from app.services.inference_engine import inference_engine
 from app.api.routers import auth, users
 # from app.api.routers import emotions
@@ -19,6 +19,8 @@ async def lifespan(_app: FastAPI):
     Loads Machine Learning ONNX models into memory on startup 
     and clears resources gracefully on shutdown.
     """
+    print("Initializing database extensions...")
+    init_db()  # Ensure pgvector is set up before any model interactions
     print("Loading ML models into memory...")
     inference_engine.load_models() 
     yield

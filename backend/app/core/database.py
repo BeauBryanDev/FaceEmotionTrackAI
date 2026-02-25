@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
+    pool_size=5,
+    max_overflow=15
 )
 
 # SessionLocal is a factory for new Session objects
@@ -31,13 +31,21 @@ def init_db():
     This must run before any models attempt to use the Vector column type.
     """
     try:
+        
         with engine.connect() as connection:
+            
             # Execute raw SQL to enable the vector extension
+            
             connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            
             connection.commit()
+            
         logger.info("Successfully verified pgvector extension in PostgreSQL.")
+        
     except Exception as e:
+        
         logger.error(f"Failed to initialize database extensions: {e}")
+        
         raise e
 
 def get_db():
@@ -48,6 +56,9 @@ def get_db():
     """
     db = SessionLocal()
     try:
+        
         yield db
+        
     finally:
+        
         db.close()

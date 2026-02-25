@@ -2,6 +2,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.orm import Session
 import json
 import numpy as np
+import cv2
+import asyncio
 
 from app.core.database import get_db
 from app.api.websockets.manager import manager
@@ -68,7 +70,7 @@ async def websocket_endpoint(
 
             # 4. Liveness Detection
             liveness_score = inference_engine.check_liveness(face_crop)
-            is_live = liveness_score > 0.85
+            is_live = liveness_score > 0.65
             
             response_data = {
                 "status": "success",
@@ -82,7 +84,9 @@ async def websocket_endpoint(
   
             if is_live:
                 
-                aligned_face = align_face(image, landmarks)
+                #aligned_face = align_face(image, landmarks)
+                aligned_face_bgr = align_face(image, landmarks)
+                aligned_face = cv2.cvtColor(aligned_face_bgr, cv2.COLOR_BGR2RGB)
                 
                
                 if user.face_embedding is not None:
@@ -105,9 +109,9 @@ async def websocket_endpoint(
                 
                 try:
                     # Extract data from your inference engine's output dictionary
-                    dominant = emotion_result.get("dominant_emotion", "neutral")
+                    dominant = emotion_result.get("dominant_emotion", "Neutral")
                     confidence = emotion_result.get("confidence", 0.0)
-                    scores = emotion_result.get("emotion_scores", {})
+                    scores = emotion_result.get("emotion_scores", {}) #TODO , it has to be changed, I need to return all emotions scores, all of them.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
 
                     # Create the record using the SQLAlchemy model
                     new_emotion_record = Emotion(
@@ -119,6 +123,8 @@ async def websocket_endpoint(
                     
                     db.add(new_emotion_record)
                     db.commit()
+                    
+                    await asyncio.get_event_loop().run_in_executor(None, db.commit)
                     
                 except Exception as db_error:
                     # Rollback the transaction on error so the session isn't poisoned

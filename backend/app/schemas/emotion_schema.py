@@ -6,11 +6,11 @@ class EmotionBase(BaseModel):
     """
     Shared properties for emotion logs.
     """
-    emotion_label: str = Field(
+    dominant_emotion: str = Field(
         ..., 
         description="The predicted emotion class (e.g., Happiness, Sadness, Neutral)"
     )
-    confidence_score: float = Field(
+    confidence: float = Field(
         ..., 
         ge=0.0, 
         le=1.0, 
@@ -27,11 +27,13 @@ class EmotionBase(BaseModel):
         description="Optional contextual note provided by the user"
     )
 
-class EmotionCreate(EmotionBase):
+class EmotionCreate(BaseModel):
     """
     Schema used when saving a new emotion log after inference.
     """
-    pass
+    emotion_label: str
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    emotion_scores: Optional[Dict[str, float]] = None
 
 class EmotionResponse(EmotionBase):
     """

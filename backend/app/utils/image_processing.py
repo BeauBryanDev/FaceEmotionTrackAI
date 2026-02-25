@@ -51,8 +51,9 @@ def convert_and_resize(
     Returns:
         np.ndarray: The processed image matrix.
     """
-    resized_image = cv2.resize(image, target_size, interpolation=cv2.INTER_AREA)
-    
+    w, h = target_size[0], target_size[1]
+    resized_image = cv2.resize(image, (w, h), interpolation=cv2.INTER_AREA)
+    # TODO :  (height, width) to (width, height)
     if to_rgb:
         return cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
         

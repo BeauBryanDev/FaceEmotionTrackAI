@@ -31,37 +31,6 @@ def read_current_user(
     return current_user
 
 
-@router.post("/me", status_code=status.HTTP_200_OK)
-def create_current_user(
-    user_in: UserCreate,
-    db: Session = Depends(get_db)
-) -> Any:
-    """
-    Create a new user.
-    
-    This endpoint requires a valid JWT Bearer token in the Authorization header.
-    The get_current_active_user dependency automatically decodes the token,
-    queries the database, and injects the User object here.
-    
-    Returns:
-        User: The SQLAlchemy User object, which FastAPI automatically serializes
-              into the UserResponse Pydantic schema (excluding sensitive data).
-    """
-    # Create the user record in the database
-    new_user = User(
-        full_name=user_in.full_name,
-        email=user_in.email,
-        hashed_password=security.get_password_hash(user_in.password),
-        age=user_in.age
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    return new_user 
-
-
 @router.put("/me", status_code=status.HTTP_200_OK)
 def update_current_user(
     user_in: UserUpdate,
@@ -80,9 +49,17 @@ def update_current_user(
               into the UserResponse Pydantic schema (excluding sensitive data).
     """
     
-    
-    # Update the user record in the database
-    for field, value in user_in.dict(exclude_unset=True).items():
+    update_data = user_in.model_dump(exclude_unset=True)
+
+    if "email" in update_data and update_data["email"] != current_user.email:
+        existing = db.query(User).filter(User.email == update_data["email"]).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This email is already registered to another account."
+            )
+
+    for field, value in update_data.items():
         setattr(current_user, field, value)
     
     # Save changes to the database
@@ -119,6 +96,23 @@ def update_face_embedding(
     db.refresh(current_user)
     
     return current_user
+
+
+@router.delete("/me/face_embedding", status_code=status.HTTP_200_OK)
+def delete_face_embedding(
+    
+    current_user: User = Depends(get_current_active_user),
+    
+    db: Session = Depends(get_db)
+    
+) -> dict:
+    
+    current_user.face_embedding = None
+    
+    db.commit()
+    
+    return {"message": "Biometric template removed."}
+
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -221,14 +215,15 @@ async def register_biometrics(
 
     # 6. Anti-Spoofing Check
     liveness_score = inference_engine.check_liveness(face_crop)
-    if liveness_score < 0.85:
+    if liveness_score < 0.65:  # Threshold can be tuned based on validation results
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Liveness check failed (Score: {liveness_score:.2f}). Please provide a live capture."
         )
 
     # 7. Align and Extract the Embedding
-    aligned_face = align_face(image, landmarks)
+    aligned_face_bgr = align_face(image, landmarks)
+    aligned_face = cv2.cvtColor(aligned_face_bgr, cv2.COLOR_BGR2RGB)
     embedding = inference_engine.get_face_embedding(aligned_face)
 
     try:

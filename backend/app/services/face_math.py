@@ -34,7 +34,7 @@ def compute_cosine_similarity(vector1: np.ndarray, vector2: np.ndarray) -> float
 def verify_biometric_match(
     stored_embedding: np.ndarray, 
     live_embedding: np.ndarray, 
-    threshold: float = 0.45
+    threshold: float = 0.5
 ) -> Tuple[bool, float]:
     """
     Determines if two face embeddings belong to the same person.

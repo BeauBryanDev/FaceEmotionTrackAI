@@ -19,7 +19,7 @@ class User(Base):
     gender = Column(String, nullable=True)
     age = Column(Integer, nullable=True)
     is_active = Column(Boolean, default=True)
-    
+    is_superuser = Column(Boolean, default=False, nullable=False)
     # Biometric Master Embedding
     # ArcFace outputs a 512-dimensional normalized vector.
     # The Vector(512) type allows for efficient similarity searches using pgvector.
@@ -28,7 +28,7 @@ class User(Base):
     emotions =  relationship("Emotion", back_populates="user")
     # Metadata for auditing and tracking
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
         return f"<User(email={self.email}, name={self.full_name})>"

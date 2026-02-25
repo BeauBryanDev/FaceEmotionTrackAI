@@ -238,3 +238,13 @@ db_test_script.py
 #Ignore all images
 
 **/*.{jpg,jpeg,png}
+
+*.jpg
+*.jpeg
+*.png
+
+#Ingnore emotions images folder
+faceEmotions/
+
+get_models.py
+

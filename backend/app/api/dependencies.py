@@ -107,9 +107,10 @@ def get_current_active_superuser(
     """
     if not current_user.is_superuser:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Inactive user account"
-        )
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+    )
+        
     return current_user
 
 async def get_user_from_token(token: str, db: Session) -> User:
@@ -145,6 +146,6 @@ async def get_user_from_token(token: str, db: Session) -> User:
 
         return user
 
-    except JWTError:
-
+    except (JWTError, ValueError, TypeError):
+        
         return None
