@@ -1,7 +1,12 @@
+from unittest import result
 import onnxruntime as ort
 import numpy as np
 import os
 from app.core.config import settings
+from app.core.logging import get_logger
+
+
+logger = get_logger(__name__)
 
 class InferenceEngine:
     """
@@ -31,10 +36,12 @@ class InferenceEngine:
                 
                 # Initialize session and store it in the dictionary
                 self.sessions[name] = ort.InferenceSession(path, providers=providers)
+                logger.info(f"Modelo '{name}' cargado correctamente.")
                 print(f"Successfully loaded {name} model.")
                 
         except Exception as e:
             print(f"Error loading models: {str(e)}")
+            logger.error(f"Error cargando modelos ONNX: {e}", exc_info=True)
             raise e
 
     def get_session(self, model_name: str):
@@ -161,6 +168,8 @@ class InferenceEngine:
                     "score": float(conf),
                     "landmarks": np.array(landmarks)
                 })
+                
+                logger.info(f"Face detectada: {total_faces[-1]}")
 
         return self._apply_nms(total_faces, iou_threshold=0.4, original_size=original_size, input_size=input_size)
     
@@ -194,6 +203,10 @@ class InferenceEngine:
         interArea = max(0, xB - xA) * max(0, yB - yA)
         boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
         boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+        
+        
+        logger.info(f"BoxA: {boxA}  BoxB: {boxB}  InterArea: {interArea}  BoxAArea: {boxAArea}  BoxBArea: {boxBArea}")
+        
         return interArea / float(boxAArea + boxBArea - interArea)    
     
     
@@ -233,7 +246,10 @@ class InferenceEngine:
         if norm > 0:
             embedding = embedding / norm
             
+        logger.info(f"Embedding extraido. Norma L2: {norm:.4f}")
+        
         return embedding
+    
 
     def check_liveness(self, face_crop: np.ndarray) -> float:
         """
@@ -271,6 +287,11 @@ class InferenceEngine:
         
         # Index 1 represents the "Real/Live" class
         liveness_score = float(probabilities[1])
+        
+        if liveness_score < 0.60:                                        
+            
+            logger.warning(f"Liveness score bajo: {liveness_score:.4f}") 
+            
         return liveness_score
 
     def detect_emotion(self, aligned_face: np.ndarray) -> dict:
@@ -295,20 +316,26 @@ class InferenceEngine:
         # EfficientNet expects standard ImageNet normalization, which uses specific 
         # arrays for mean and standard deviation across the RGB channels.
         image_float = resized_image.astype(np.float32) / 255.0
+        
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         
         normalized_img = (image_float - mean) / std
+        
         chw_image = np.transpose(normalized_img, (2, 0, 1))
+        
         input_tensor = np.expand_dims(chw_image, axis=0)
         
         input_name = session.get_inputs()[0].name
+        
         raw_outputs = session.run(None, {input_name: input_tensor})
         
         logits = raw_outputs[0].flatten()
         
         # Softmax for probability distribution
         exp_logits = np.exp(logits - np.max(logits))
+        
         probabilities = exp_logits / np.sum(exp_logits)
         
         # The 8 classes defined by the AffectNet dataset standard
@@ -319,12 +346,21 @@ class InferenceEngine:
         # TODO , it has to be changed, I need to return all emotions scores, all of them. 
         max_index = int(np.argmax(probabilities))
         
-        return {
-            "dominant_emotion": emotion_classes[max_index],
-            "confidence_score": float(probabilities[max_index]),
-            "emotion_scores": dict(zip(emotion_classes, probabilities.tolist()))
-        }
+        resutl = dict(
+            dominant_emotion = emotion_classes[max_index],
+            confidence = float(probabilities[max_index]),
+            emotion_scores = dict(zip(emotion_classes, probabilities.tolist()))
+        )
         
+        logger.info(
+        f"Emoción detectada: {resutl['dominant_emotion']}   "
+        f"({resutl['confidence']:.4f} confidence)",
+        )
+
+        
+        return resutl
+        
+
         
 
 # Global instance for the Singleton pattern

@@ -48,6 +48,7 @@ def init_db():
         
         raise e
 
+# TODO : disable this method as it is already defined in session.py and causes circular imports
 def get_db():
     """
     FastAPI dependency function to provide a database session per request.

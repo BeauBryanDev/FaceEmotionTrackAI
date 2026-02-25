@@ -5,11 +5,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import get_db, init_db
+from app.core.database import get_db, init_db, SessionLocal
+from app.core.session import get_session
 from app.services.inference_engine import inference_engine
 from app.api.routers import auth, users
-# from app.api.routers import emotions
+from app.api.routers import emotions
 from app.api.websockets import stream
+from app.core.logging import setup_logging, get_logger
+
+
+
+logger = get_logger(__name__)
 
 # --- Application Lifecycle (Lifespan) ---
 @asynccontextmanager
@@ -19,14 +25,18 @@ async def lifespan(_app: FastAPI):
     Loads Machine Learning ONNX models into memory on startup 
     and clears resources gracefully on shutdown.
     """
+    setup_logging()
     print("Initializing database extensions...")
+    logger.info("Inicializando extension pgvector en PostgreSQL...")
     init_db()  # Ensure pgvector is set up before any model interactions
     print("Loading ML models into memory...")
+    logger.info("Cargando modelos ONNX en memoria...")
     inference_engine.load_models() 
     yield
     print("Cleaning up ML model resources...")
     inference_engine.clear_models()
-
+    logger.info("Aplicacion lista. Docs en http://localhost:8000/docs")
+    logger.info("Saliendo...")
 # --- FastAPI Instance ---
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -47,7 +57,7 @@ app.add_middleware(
 # --- REST API Routers ---
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
-# app.include_router(emotions.router, prefix="/api/v1/emotions", tags=["Emotions"])
+app.include_router(emotions.router, prefix="/api/v1/emotions", tags=["Emotions"])
 app.include_router(stream.router, tags=["WebSockets"])
 
 # --- WebSocket Documentation Trick ---

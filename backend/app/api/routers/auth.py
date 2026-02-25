@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import asyncio
 
-from app.core.database import get_db
+from app.core.session import get_db
 from app.core import security
 from app.models.users import User
 from app.schemas.user_schema import UserCreate, UserResponse

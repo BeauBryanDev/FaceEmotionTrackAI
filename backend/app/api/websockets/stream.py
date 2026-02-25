@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import asyncio
 
-from app.core.database import get_db
+from app.core.session import get_db
 from app.api.websockets.manager import manager
 from app.api.dependencies import get_user_from_token
 from app.services.inference_engine import inference_engine

@@ -44,6 +44,8 @@ services:
     volumes:
       
       - ./backend:/app
+      - ./logs:/app/logs
+
     depends_on:
       db:
         

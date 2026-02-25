@@ -248,3 +248,8 @@ faceEmotions/
 
 get_models.py
 
+#Ignore Logs
+logs/*.log
+
+
+

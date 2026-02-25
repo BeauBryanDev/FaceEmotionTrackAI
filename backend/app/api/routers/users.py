@@ -4,7 +4,7 @@ from typing import Any
 import numpy as np
 import cv2
 
-from app.core.database import get_db
+from app.core.session import get_db
 from app.api.dependencies import get_current_active_user
 from app.models.users import User
 from app.schemas.user_schema import UserResponse , UserUpdate , UserCreate

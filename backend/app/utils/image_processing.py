@@ -2,6 +2,11 @@ import cv2
 import numpy as np
 import base64
 from typing import Tuple, Optional
+from app.core.logging import get_logger
+
+
+logger = get_logger(__name__)
+
 
 def decode_base64_image(base64_string: str) -> Optional[np.ndarray]:
     """
@@ -33,6 +38,7 @@ def decode_base64_image(base64_string: str) -> Optional[np.ndarray]:
         return image
     except Exception as e:
         print(f"Error decoding Base64 image: {str(e)}")
+        logger.error("Fallo al decodificar imagen base64", exc_info=True)
         return None
 
 def convert_and_resize(
