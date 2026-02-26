@@ -36,9 +36,13 @@ def decode_base64_image(base64_string: str) -> Optional[np.ndarray]:
         image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         
         return image
+    
     except Exception as e:
+        
         print(f"Error decoding Base64 image: {str(e)}")
-        logger.error("Fallo al decodificar imagen base64", exc_info=True)
+        
+        logger.error("Failed to decode base64 image", exc_info=True)
+        
         return None
 
 def convert_and_resize(
@@ -62,7 +66,9 @@ def convert_and_resize(
     # TODO :  (height, width) to (width, height)
     if to_rgb:
         return cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
-        
+    
+    print(image.shape)
+    print(resized_image.shape)
     return resized_image
 
 def prepare_tensor_for_onnx(
@@ -94,20 +100,23 @@ def prepare_tensor_for_onnx(
     chw_image = np.transpose(normalized_img, (2, 0, 1))
     
     # Add the batch dimension (N) to create NCHW shape
+    print(chw_image.shape)
     tensor = np.expand_dims(chw_image, axis=0)
-    
+    print(tensor.shape)
     return tensor
 
 
 # Standard reference facial landmarks for ArcFace 112x112 input.
-# These specific coordinates represent the ideal positions for the 
+# These specific pointss represent the ideal positions for the 
 # left eye, right eye, nose, left mouth, and right mouth.
 ARCFACE_REFERENCE_LANDMARKS = np.array([
+    
     [38.2946, 51.6963],
     [73.5318, 51.5014],
     [56.0252, 71.7366],
     [41.5493, 92.3655],
     [70.7299, 92.2041]
+    
 ], dtype=np.float32)
 
 def align_face(
@@ -131,8 +140,6 @@ def align_face(
         np.ndarray: The aligned and cropped face image of shape (output_size[1], output_size[0], 3).
     """
     # Estimate the partial affine transformation matrix (rotation, translation, and scaling).
-    # We use estimateAffinePartial2D because it restricts the transformation to rigid 
-    # movements, preventing unnatural shearing of the facial features.
     transformation_matrix, inliers = cv2.estimateAffinePartial2D(
         landmarks, 
         ARCFACE_REFERENCE_LANDMARKS, 

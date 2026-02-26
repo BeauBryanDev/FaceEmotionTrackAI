@@ -1,6 +1,7 @@
 from unittest import result
 import onnxruntime as ort
 import numpy as np
+import time 
 import os
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -27,7 +28,7 @@ class InferenceEngine:
         Initializes ONNX Runtime sessions for all models.
         Optimized for CPU usage using CPUExecutionProvider.
         """
-        providers = ['CPUExecutionProvider']
+        providers = ['CPUExecutionProvider'] # , 'CUDAExecutionProvider' not available on t3.small EC2 instances.
         
         try:
             for name, path in self.model_paths.items():
@@ -36,12 +37,14 @@ class InferenceEngine:
                 
                 # Initialize session and store it in the dictionary
                 self.sessions[name] = ort.InferenceSession(path, providers=providers)
-                logger.info(f"Modelo '{name}' cargado correctamente.")
+                logger.info(f"Model '{name}' loaded successfully.")
                 print(f"Successfully loaded {name} model.")
+                print(f"Providers: {providers}")
+                
                 
         except Exception as e:
             print(f"Error loading models: {str(e)}")
-            logger.error(f"Error cargando modelos ONNX: {e}", exc_info=True)
+            logger.error(f"Error loading ONNX models: {e}", exc_info=True)
             raise e
 
     def get_session(self, model_name: str):
@@ -70,29 +73,32 @@ class InferenceEngine:
                     for every detected face.
             """
             session = self.get_session("detection")
+            
             if not session:
+                
                 raise RuntimeError("Detection model session is not initialized.")
 
             # SCRFD typically operates optimally on specific input resolutions like 640x640.
-            # We use the utility functions built previously to prepare the tensor.
+            # USE THE UTILITY FUNCTIONS BUILT PREVIOUSLY TO PREPARE THE TENSOR.
             from app.utils.image_processing import convert_and_resize, prepare_tensor_for_onnx
             
             input_size = (640, 640)
             original_height, original_width = image.shape[:2]
-            
+            print(f"Input image shape: {image.shape}")
             # Resize and convert BGR to RGB
             resized_image = convert_and_resize(image, input_size, to_rgb=True)
-            
+            print(f"Resized image shape: {resized_image.shape}")
             # InsightFace SCRFD standard normalization: (pixel_value - 127.5) / 128.0
             # This centers the data around 0 with a standard deviation of 1.
             image_float = resized_image.astype(np.float32)
             image_normalized = (image_float - 127.5) / 128.0
             chw_image = np.transpose(image_normalized, (2, 0, 1))
             input_tensor = np.expand_dims(chw_image, axis=0)
+            print(f"Input tensor shape: {input_tensor.shape}") 
             # Execute the ONNX runtime session
             input_name = session.get_inputs()[0].name
             raw_outputs = session.run(None, {input_name: input_tensor})
-            
+            print(f"Raw outputs: {len(raw_outputs)} tensors")
             # SCRFD outputs multiple tensors representing bounding box regressions, 
             # classification scores, and landmark predictions across different stride levels.
             # In a full production environment, these raw outputs are decoded using 
@@ -104,7 +110,7 @@ class InferenceEngine:
                 input_size, 
                 (original_height, original_width)
             )
-            
+            # x5 landmarks per face (eyes, nose, mouth corners) for alignment.
             return faces
 
 
@@ -143,6 +149,7 @@ class InferenceEngine:
             # Filter by threshold
             scores_flat = scores.flatten()
             pos_indices = np.where(scores_flat > threshold)[0]
+            print(f"Stride {stride}: {len(pos_indices)} faces detected") 
             
             for idx in pos_indices:
                 conf = scores_flat[idx]
@@ -158,6 +165,7 @@ class InferenceEngine:
                 #  Decode Landmarks (5 points = 10 coordinates)
                 reg_kps = kps.reshape((-1, 10))[idx]
                 landmarks = []
+                
                 for k in range(0, 10, 2):
                     px = anchor[0] + reg_kps[k]
                     py = anchor[1] + reg_kps[k+1]
@@ -175,6 +183,7 @@ class InferenceEngine:
     
 
     def _apply_nms(self, faces, iou_threshold, original_size, input_size):
+        
         if not faces: return []
         
         # Order by score
@@ -182,6 +191,7 @@ class InferenceEngine:
         keep = []
         
         while faces:
+            
             best_face = faces.pop(0)
             keep.append(best_face)
             faces = [f for f in faces if self._compute_iou(best_face['bbox'], f['bbox']) < iou_threshold]
@@ -191,6 +201,7 @@ class InferenceEngine:
         w_ratio = original_size[1] / input_size[1]
         
         for f in keep:
+            
             f['bbox'] = [f['bbox'][0]*w_ratio, f['bbox'][1]*h_ratio, f['bbox'][2]*w_ratio, f['bbox'][3]*h_ratio]
             f['landmarks'][:, 0] *= w_ratio
             f['landmarks'][:, 1] *= h_ratio
@@ -198,6 +209,7 @@ class InferenceEngine:
         return keep
 
     def _compute_iou(self, boxA, boxB):
+        
         xA = max(boxA[0], boxB[0]); yA = max(boxA[1], boxB[1])
         xB = min(boxA[2], boxB[2]); yB = min(boxA[3], boxB[3])
         interArea = max(0, xB - xA) * max(0, yB - yA)
@@ -220,8 +232,13 @@ class InferenceEngine:
         Returns:
             np.ndarray: A 1D array of shape (512,) representing the L2-normalized face embedding.
         """
+        
+        start = time.time()
+        
         session = self.get_session("recognition")
+        
         if not session:
+            
             raise RuntimeError("Recognition model session is not initialized.")
 
         # ArcFace w600k_mbf requires exactly 112x112 input and standard normalization
@@ -232,10 +249,10 @@ class InferenceEngine:
             mean=0.5, 
             std=0.5
         )
-        
+        print(f"Input tensor shape: {input_tensor.shape}") 
         input_name = session.get_inputs()[0].name
         raw_outputs = session.run(None, {input_name: input_tensor})
-        
+        print(f"Raw embedding shape: {raw_outputs[0].shape}")
         # The output is a batch of embeddings, shape (1, 512)
         # We extract the first element and flatten it to a 1D array
         embedding = raw_outputs[0].flatten()
@@ -248,12 +265,15 @@ class InferenceEngine:
             
         logger.info(f"Embedding extraido. Norma L2: {norm:.4f}")
         
+        print(f"Embedding norm: {norm:.4f}")
+        print(f"Inference time: {time.time() - start:.4f}s")
+        
         return embedding
     
 
     def check_liveness(self, face_crop: np.ndarray) -> float:
         """
-        Assess the liveness of a face crop by evaluating it against a real person.
+        Assess the liveness of a face crop by evaluating it against a real person using MiniFASNetV2.
         
         Args:
             face_crop (np.ndarray): The cropped RGB face image.
@@ -261,10 +281,12 @@ class InferenceEngine:
         Returns:
             float: A confidence score between 0.0 and 1.0, where 1.0 is a verified live person.
         """
-        session = self.get_session("liveness")
+        session = self.get_session("liveness")  
+        
         if not session:
+            
             raise RuntimeError("Liveness model session is not initialized.")
-
+        # TODO , SEND THIS IMPORT LINE TO HEADER, DO NOT BE INSIDE THE FUNCTION, I NEED TO USE THIS FUNCTION IN OTHER PARTS OF THE CODE, NOT ONLY IN THIS FILE.
         from app.utils.image_processing import convert_and_resize, prepare_tensor_for_onnx
         
         # MiniFASNetV2 operates on an 80x80 input resolution
@@ -284,30 +306,35 @@ class InferenceEngine:
         logits = raw_outputs[0].flatten()
         exp_logits = np.exp(logits - np.max(logits))
         probabilities = exp_logits / np.sum(exp_logits)
-        
+        print(f"Liveness probabilities: {probabilities}")
         # Index 1 represents the "Real/Live" class
         liveness_score = float(probabilities[1])
         
         if liveness_score < 0.60:                                        
             
-            logger.warning(f"Liveness score bajo: {liveness_score:.4f}") 
+            logger.warning(f"Liveness score too low ({liveness_score:.4f})")
             
         return liveness_score
 
     def detect_emotion(self, aligned_face: np.ndarray) -> dict:
         """
         Classifies the dominant facial emotion using the EfficientNet-B0 model.
-        
+        By default, the EfficientNet-B0 model is used.
         Args:
             aligned_face (np.ndarray): The aligned RGB face image.
             
         Returns:
             dict: A dictionary containing the 'emotion_label' and 'confidence_score'.
         """
+        start = time.time()
+        
         session = self.get_session("emotion")
+        
         if not session:
+            
             raise RuntimeError("Emotion model session is not initialized.")
 
+        # TODO , SEND THIS IMPORT LINE TO HEADER, DO NOT BE INSIDE THE FUNCTION, I NEED TO USE THIS FUNCTION IN OTHER PARTS OF THE CODE, NOT ONLY IN THIS FILE.
         from app.utils.image_processing import convert_and_resize
         
         # HSEmotion models require 224x224 input
@@ -343,7 +370,7 @@ class InferenceEngine:
             "Anger", "Contempt", "Disgust", "Fear", 
             "Happiness", "Neutral", "Sadness", "Surprise"
         ]
-        # TODO , it has to be changed, I need to return all emotions scores, all of them. 
+        # TODO , it has to be changed, I need to return all emotions scores, all of them , I want all of them for debuging purposes.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
         max_index = int(np.argmax(probabilities))
         
         resutl = dict(
@@ -361,7 +388,6 @@ class InferenceEngine:
         return resutl
         
 
-        
 
 # Global instance for the Singleton pattern
 inference_engine = InferenceEngine()

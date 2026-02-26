@@ -23,20 +23,24 @@ async def websocket_endpoint(
     token: str = Query(...),
     db: Session = Depends(get_db)
 ):
-    # 1. Autenticación
+    # 1. Authentication
     user = await get_user_from_token(token, db)
+    
     if not user or not user.is_active:
+        
         await websocket.close(code=1008)
+        
         return
 
-    # 2. Registro en el Manager
+    # 2. Register Connection in Manager
     await manager.connect(user.id, websocket)
     
     consecutive_low_ear_frames = 0
 
     try:
+        
         while True:
-            # Recibir frame del frontend
+            # Receivee frame from frontend
             raw_data = await websocket.receive_text()
             payload = json.loads(raw_data)
             base64_string = payload.get("image")
@@ -49,7 +53,7 @@ async def websocket_endpoint(
             if image is None:
                 continue
 
-            # 3. Pipeline de Machine Learning
+            # ML Pipeline
             faces = inference_engine.detect_faces(image)
             
             if not faces:
@@ -90,8 +94,9 @@ async def websocket_endpoint(
                 
                 consecutive_low_ear_frames = 0
 
-            # 4. Liveness Detection
+            # Liveness Detection
             liveness_score = inference_engine.check_liveness(face_crop)
+            
             is_live = liveness_score > 0.65
             
             response_data = {
