@@ -12,6 +12,8 @@ from app.services.inference_engine import inference_engine
 from app.utils.image_processing import decode_base64_image, align_face
 from app.services.face_math import verify_biometric_match
 from app.models.emotions import Emotion 
+from app.services.face_geometry import analyze_face_geometry
+
 
 router = APIRouter()
 
@@ -29,6 +31,8 @@ async def websocket_endpoint(
 
     # 2. Registro en el Manager
     await manager.connect(user.id, websocket)
+    
+    consecutive_low_ear_frames = 0
 
     try:
         while True:
@@ -67,6 +71,24 @@ async def websocket_endpoint(
             
             if face_crop.size == 0:
                 continue
+            
+            img_h, img_w = image.shape[:2]
+            
+            geometry_data = analyze_face_geometry(
+                landmarks=np.array(landmarks),
+                image_width=img_w,
+                image_height=img_h,
+                consecutive_low_ear_frames=consecutive_low_ear_frames
+            )
+            
+            if geometry_data["ear"]["ear"] < 0.22:
+                
+                
+                consecutive_low_ear_frames += 1
+                
+            else:
+                
+                consecutive_low_ear_frames = 0
 
             # 4. Liveness Detection
             liveness_score = inference_engine.check_liveness(face_crop)
@@ -131,6 +153,7 @@ async def websocket_endpoint(
                     db.rollback()
                     print(f"Failed to save emotion to DB for user {user.id}: {str(db_error)}")
 
+            response_data["geometry"] = geometry_data
             
             await manager.send_personal_json(response_data, user.id)
 
