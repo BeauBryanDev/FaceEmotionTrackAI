@@ -67,13 +67,24 @@ def apply_pca_reduction(embeddings: np.ndarray, n_components: int = 128) -> np.n
         
     Returns:
         np.ndarray: The dimensionality-reduced embeddings.
+        
     """
+    
+    if embeddings.ndim != 2:
+        raise ValueError(
+            f"embeddings must be a 2D array of shape (n_samples, n_features). "
+            f"Got shape: {embeddings.shape}"
+        )
+    
     if embeddings.shape[1] <= n_components:
         return embeddings
 
     # Step 1: Mean centering the data
     mean_vector = np.mean(embeddings, axis=0)
     centered_data = embeddings - mean_vector
+    
+    max_components = min(embeddings.shape[0], embeddings.shape[1])
+    n_components   = min(n_components, max_components)
     
     # Step 2: Singular Value Decomposition (SVD)
     # X = U * S * V^T
@@ -110,3 +121,11 @@ def apply_pca_reduction_batch(
     ]
     
     return reduced_embeddings   
+
+    # TODO :  CHECK THIS FIXTURE  to apply_pca_reductions_batch method :
+    """
+    return [
+        apply_pca_reduction(matrix, n_components)
+        for matrix in embeddings  # cada elemento debe ser (n_samples, n_features)
+    ]
+    """

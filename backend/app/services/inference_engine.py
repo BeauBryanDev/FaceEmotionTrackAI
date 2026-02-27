@@ -373,19 +373,19 @@ class InferenceEngine:
         # TODO , it has to be changed, I need to return all emotions scores, all of them , I want all of them for debuging purposes.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
         max_index = int(np.argmax(probabilities))
         
-        resutl = dict(
+        result = dict(
             dominant_emotion = emotion_classes[max_index],
             confidence = float(probabilities[max_index]),
             emotion_scores = dict(zip(emotion_classes, probabilities.tolist()))
         )
         
         logger.info(
-        f"Emoción detectada: {resutl['dominant_emotion']}   "
-        f"({resutl['confidence']:.4f} confidence)",
+        f"Emoción detectada: {result['dominant_emotion']}   "
+        f"({result['confidence']:.4f} confidence)",
         )
 
         
-        return resutl
+        return result
         
 
 
