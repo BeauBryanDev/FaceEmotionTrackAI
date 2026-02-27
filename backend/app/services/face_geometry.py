@@ -255,7 +255,7 @@ def estimate_head_pose(
         image_points_2d,
         camera_matrix,
         dist_coeffs,
-        flags=cv2.SOLVEPNP_ITERATIVE
+        flags=cv2.SOLVEPNP_EPNP
     )
 
     if not success:
@@ -273,18 +273,10 @@ def estimate_head_pose(
     rotation_matrix, _ = cv2.Rodrigues(rotation_vector)
 
     # Extract Euler angles from the rotation matrix
-    # Using OpenCV's RQ decomposition to get the angles in a more stable way
-    _, _, _, _, _, _, euler_angles = cv2.decomposeHomographyMat(
-        np.hstack([rotation_matrix, translation_vector]),
-        camera_matrix
-    )
-    logger.debug(f"Euler angles from decomposeHomographyMat: {euler_angles.flatten()}")
-
-    # Direct arctan2 approach (more stable than decomposeHomographyMat for head pose) *
     pitch = float(np.degrees(np.arctan2(
         rotation_matrix[2, 1],
-        rotation_matrix[2, 2]
-    )))
+            rotation_matrix[2, 2]
+        )))
     yaw = float(np.degrees(np.arctan2(
         -rotation_matrix[2, 0],
         np.sqrt(rotation_matrix[2, 1]**2 + rotation_matrix[2, 2]**2)
