@@ -11,6 +11,7 @@ from app.services.inference_engine import inference_engine
 from app.api.routers import auth, users
 from app.api.routers import emotions
 from app.api.websockets import stream
+from app.api.routers import analytics
 from app.core.logging import setup_logging, get_logger
 
 
@@ -37,6 +38,8 @@ async def lifespan(_app: FastAPI):
     inference_engine.clear_models()
     logger.info("Aplicacion lista. Docs en http://localhost:8000/docs")
     logger.info("Saliendo...")
+    
+    
 # --- FastAPI Instance ---
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -59,24 +62,17 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(emotions.router, prefix="/api/v1/emotions", tags=["Emotions"])
 app.include_router(stream.router, tags=["WebSockets"])
+app.include_router(
+    analytics.router,
+    prefix="/api/v1/analytics",
+    tags=["Analytics"]
+)
+
 
 # --- WebSocket Documentation Trick ---
 @app.get("/ws/stream", tags=["WebSockets"], summary="WebSocket Stream Documentation")
 async def websocket_docs():
     """
-    **Note: This endpoint is strictly for documentation purposes.** Swagger UI (OpenAPI 3.0) does not natively render WebSocket connections.
-    
-    To connect to the real-time biometric stream, establish a WebSocket connection using:
-    `ws://localhost:8000/ws/stream?token=YOUR_JWT_TOKEN`
-    
-    **Payload format (Client -> Server):**
-    ```json
-    {
-        "image": "base64_encoded_string_without_data_uri_header"
-    }
-    ```
-    
-    **Response format (Server -> Client):**
     Returns a JSON object containing bounding boxes, liveness scores, 
     biometric similarity, and detected emotions.
     """
@@ -114,3 +110,6 @@ async def health_check(db: Session = Depends(get_db)):
             status_code=503,
             detail=f"Database connection failed: {str(e)}"
         )
+
+# Print Setting to Debugging
+print(settings.model_dump()) 

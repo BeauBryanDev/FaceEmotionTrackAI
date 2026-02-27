@@ -25,7 +25,8 @@ class User(Base):
     # The Vector(512) type allows for efficient similarity searches using pgvector.
     face_embedding = Column(Vector(512), nullable=True)
     #One-To-Many relationship
-    emotions =  relationship("Emotion", back_populates="user")
+    emotions =  relationship("Emotion", back_populates="user")   
+    session_embeddings = relationship("FaceSessionEmbedding", back_populates="user")
     # Metadata for auditing and tracking
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

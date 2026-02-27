@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import computed_field
+from pydantic import computed_field, HttpUrl
 from typing import List
 
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.POSTGRES_DB}"
     
     
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]  # TODO: Change to your frontend URL
+    ALLOWED_ORIGINS: list[HttpUrl] = ["http://localhost:3000"]  # TODO: Change to your frontend URL
     
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

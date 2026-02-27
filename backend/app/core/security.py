@@ -13,6 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # HS256 requires a single secret key for both signing and verification.
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.SECRET_KEY
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """

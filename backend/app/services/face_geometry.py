@@ -13,9 +13,9 @@ IDX_MOUTH_LEFT = 3
 IDX_MOUTH_RIGHT= 4
 
 # Thresholds for fatigue detection
-EAR_BLINK_THRESHOLD      = 0.22
-EAR_DROWSINESS_THRESHOLD = 0.18
-DROWSINESS_FRAME_THRESHOLD = 15
+EAR_BLINK_THRESHOLD      = 0.22  # Blink if EAR < 0.22
+EAR_DROWSINESS_THRESHOLD = 0.18  # Drowsy if EAR < 0.18 for 15+ frames
+DROWSINESS_FRAME_THRESHOLD = 15   # Drowsy if EAR < 0.18 for 15+ frames
 
 # Reference: Guo et al. "Face Alignment by Explicit Shape Regression" (2012)
 MODEL_3D_POINTS = np.array([
@@ -68,6 +68,7 @@ def compute_ear_from_landmarks(landmarks: np.ndarray) -> float :
     eye_distance = float(np.linalg.norm(right_eye - left_eye))
 
     if eye_distance < 1e-6:
+        
         return 0.0
     
     eye_center = (left_eye + right_eye) / 2.0
@@ -75,10 +76,13 @@ def compute_ear_from_landmarks(landmarks: np.ndarray) -> float :
     # This distance is normalized by the inter-ocular distance.
     # When eyes close, this component decreases as landmarks shift downwards.
     vertical_component = float(np.linalg.norm(eye_center - nose))
-    
+    print(f"Left eye: {left_eye}, Right eye: {right_eye}, Nose: {nose}")
     ear = (vertical_component / eye_distance)
     # Scale factor to align with standard EAR ranges
     ear_normalized = ear * 0.5
+    # Scaled to match standard EAR ranges
+    
+    logger.debug(f"EAR calculation: vertical_component={vertical_component:.2f}, eye_distance={eye_distance:.2f}, ear={ear:.4f}, ear_normalized={ear_normalized:.4f}")
     
     if ear_normalized < 0.22:
         
@@ -134,6 +138,9 @@ def classify_eye_state(
     else:
         
         eye_state = "open"
+        
+        
+    print(f"EAR: {ear:.4f}, Blinking: {is_blinking}, Drowsy: {is_drowsy}, State: {eye_state}")
 
     return {
         "ear"        : ear,
@@ -223,7 +230,9 @@ def estimate_head_pose(
     """
     # 2D frame points ordered according to SOLVEPNP_LANDMARK_INDICES
     image_points_2d = np.array([
+        
         landmarks[idx] for idx in SOLVEPNP_LANDMARK_INDICES
+        
     ], dtype=np.float64)
 
     # Camera intrinsic matrix (approximation for standard webcams)
@@ -297,7 +306,7 @@ def estimate_head_pose(
     # check this articlo for more infor : 
     # https://www.learnopencv.com/head-pose-estimation-using-opencv-and-dlib/
     # https://www.learnopencv.com/rotation-matrix-to-euler-angles/
-    
+    logger.debug(f"Head pose estimation: pitch={pitch:.2f}, yaw={yaw:.2f}, roll={roll:.2f}, pose_label={pose_label}, is_frontal={is_frontal}")
     
     return {
         "pitch"          : pitch,
@@ -375,7 +384,7 @@ def analyze_face_geometry(
     consecutive_low_ear_frames: int = 0
 ) -> dict:
     """
-    Executes a complete facial geometric analysis in a single call.
+    Executes  facial geometric analysis in a single call.
     
     This is a high-level interface designed to be called by the streaming 
     module on every frame. It aggregates EAR (eyes), MAR (mouth), and 
