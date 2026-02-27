@@ -3,7 +3,6 @@ import numpy as np
 import cv2
 
 
-
 # EMBEDDING FIXTURES
 # Fixtures defined here are automatically available to all test files in the backend/tests/ directory.
 @pytest.fixture
