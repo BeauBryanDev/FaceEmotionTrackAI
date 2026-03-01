@@ -1,0 +1,128 @@
+name: Label Change Handler
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+  pull_request:
+    types: [labeled, unlabeled]
+
+jobs:
+  handle-bug-label:
+    name: Handle Bug Label
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'bug') ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'bug')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Comment on bug label added
+        if: github.event.action == 'labeled'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '**Bug labeled!** This issue has been marked as a bug. Please ensure it includes reproduction steps and expected behavior.'
+            })
+
+      - name: Comment on bug label removed
+        if: github.event.action == 'unlabeled'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '**Bug label removed.** This issue is no longer marked as a bug.'
+            })
+
+  handle-feature-label:
+    name: Handle Feature Label
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'feature') ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'feature')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Comment on feature label added
+        if: github.event.action == 'labeled'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '**Feature request registered!** This has been marked as a feature request.'
+            })
+
+  handle-documentation-label:
+    name: Handle Documentation Label
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'documentation') ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'documentation')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Comment on documentation label added
+        if: github.event.action == 'labeled'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: ' **Documentation update!** This item requires documentation updates.'
+            })
+
+  handle-critical-label:
+    name: Handle Critical Label
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'critical')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Assign to maintainers
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addAssignees({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              assignees: ['BeauBryanDev']
+            })
+
+      - name: Comment on critical label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: ' **CRITICAL ISSUE!** This has been assigned to maintainers for immediate attention.'
+            })
+
+  log-label-change:
+    name: Log Label Change Event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display label information
+        run: |
+          echo "Event: ${{ github.event.action }}"
+          echo "Label: ${{ github.event.label.name }}"
+          echo "Issue/PR: #${{ github.event.issue.number || github.event.pull_request.number }}"
+          echo "Author: ${{ github.event.issue.user.login || github.event.pull_request.user.login }}"
