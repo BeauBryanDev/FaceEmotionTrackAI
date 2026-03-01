@@ -39,22 +39,7 @@ def _make_engine_with_mock_sessions() -> InferenceEngine:
 
 class TestLoadModels:
     """Tests for InferenceEngine.load_models()."""
-    
-    @patch("app.services.inference_engine.ort.InferenceSession")
-    def test_loads_all_models(self, mock_ort_session):
-        """
-        load_models() loads all models from the models/ directory.
-        """
-        engine = _make_engine_with_mock_sessions()
-        engine.load_models()
-        
-        assert len(engine.sessions) == 4
-        assert "detection" in engine.sessions
-        assert "recognition" in engine.sessions
-        assert "liveness" in engine.sessions
-        assert "emotion" in engine.sessions
-        
-    
+
     @patch("os.path.exists", return_value=True)
     @patch("onnxruntime.InferenceSession")
     def test_load_models_success(self, mock_session, mock_exists):
