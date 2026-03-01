@@ -91,12 +91,7 @@ jobs:
           DATABASE_URL: sqlite:///:memory:
           MODELS_PATH: /app/ml_weights
           PYTHONPATH: .
-        run: |
-          pytest tests/test_face_math.py \
-                 tests/test_face_geometry.py \
-                 tests/test_inference_engine.py \
-                 -v --tb=short \
-                 --junit-xml=test-results-unit.xml
+        run: pytest tests/test_face_math.py tests/test_face_geometry.py tests/test_inference_engine.py -v --tb=short --junit-xml=test-results-unit.xml
 
       - name: Run integration tests
         working-directory: backend
@@ -107,12 +102,7 @@ jobs:
           DATABASE_URL: sqlite:///:memory:
           MODELS_PATH: /app/ml_weights
           PYTHONPATH: .
-        run: |
-          pytest tests/test_integration_auth.py \
-                 tests/test_integration_users.py \
-                 tests/test_integration_emotions.py \
-                 -v --tb=short \
-                 --junit-xml=test-results-integration.xml
+        run: pytest tests/test_integration_auth.py tests/test_integration_users.py tests/test_integration_emotions.py -v --tb=short --junit-xml=test-results-integration.xml
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
