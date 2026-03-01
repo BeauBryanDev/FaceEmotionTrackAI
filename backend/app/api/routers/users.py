@@ -31,7 +31,7 @@ def read_current_user(
     return current_user
 
 
-@router.put("/me", status_code=status.HTTP_200_OK)
+@router.put("/me", status_code=status.HTTP_200_OK, response_model=UserResponse)
 def update_current_user(
     user_in: UserUpdate,
     current_user: User = Depends(get_current_active_user),

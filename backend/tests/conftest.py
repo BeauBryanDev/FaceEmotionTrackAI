@@ -3,6 +3,116 @@ import numpy as np
 import cv2
 
 
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, event, Text, text as sql_text
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.types import TypeDecorator
+from sqlalchemy.pool import StaticPool
+from contextlib import asynccontextmanager
+
+# Import all models FIRST to ensure Base.metadata is populated
+from app.core.database import Base
+import app.models.users
+import app.models.emotions
+import app.models.face_session
+
+from app.main import app
+from app.core.session import get_db as session_get_db
+from app.core.database import get_db as database_get_db
+from app.models.users import User
+from app.core.security import get_password_hash
+
+
+# Replace the app's lifespan with a no-op version to prevent DB/ML initialization
+@asynccontextmanager
+async def _empty_lifespan(_app):
+    """Empty lifespan for testing - skips DB init and ML model loading."""
+    yield
+
+# CRITICAL: Override the lifespan context manager BEFORE any TestClient is created
+app.router.lifespan_context = _empty_lifespan
+
+class VectorAsText(TypeDecorator):
+    """
+    SQLite-compatible replacement for pgvector's Vector type.
+    Stores the embedding as a JSON string in SQLite.
+    In production PostgreSQL, the real Vector(512) type is used.
+    """
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+
+        if value is None:
+
+            return None
+
+        import json
+
+        return json.dumps(value) if isinstance(value, list) else str(value)
+
+
+    def process_result_value(self, value, dialect):
+
+        if value is None:
+
+            return None
+
+        import json
+
+        try:
+
+            return json.loads(value)
+
+        except (ValueError, TypeError):
+
+            return value
+
+
+class JsonAsText(TypeDecorator):
+    """
+    SQLite-compatible replacement for PostgreSQL's JSONB type.
+    Serializes Python dicts/lists to JSON strings for storage in SQLite.
+    """
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        import json
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        import json
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return value
+
+# Patch pgvector and JSONB columns to be Text in SQLite tests
+
+def _patch_vector_columns():
+    """
+    Patches all PostgreSQL-specific column types to SQLite-compatible types.
+    Models are already imported at the top of the file to ensure their
+    mappers are registered before iterating Base.registry.mappers.
+    """
+    from pgvector.sqlalchemy import Vector
+    from sqlalchemy.dialects.postgresql import JSONB
+
+    for mapper in Base.registry.mappers:
+        for column in mapper.mapped_table.columns:
+            if isinstance(column.type, Vector):
+                column.type = VectorAsText()
+            elif isinstance(column.type, JSONB):
+                column.type = JsonAsText()
+
+
+
+
 # EMBEDDING FIXTURES
 # Fixtures defined here are automatically available to all test files in the backend/tests/ directory.
 @pytest.fixture
@@ -124,7 +234,6 @@ def left_yaw_landmarks_640x480() -> np.ndarray:
     ], dtype=np.float32)
 
 
-
 @pytest.fixture
 def right_yaw_landmarks_640x480() -> np.ndarray:
     """
@@ -139,6 +248,8 @@ def right_yaw_landmarks_640x480() -> np.ndarray:
         [375.0, 280.0],   # mouth right
     ], dtype=np.float32)
 
+
+# IMAGE FIXTURES
 
 @pytest.fixture
 def image_width_640() -> int:
@@ -210,4 +321,126 @@ def invalid_base64_string() -> str:
     Tests that decode_base64_image returns None gracefully.
     """
     return "this_is_not_valid_base64_@@@@"
+
+
+# Fixtures
+
+# Use a SHARED in-memory database so all connections see the same data
+# The key is "cache=shared" which makes the database accessible across connections
+SQLITE_URL = "sqlite:///:memory:?cache=shared"
+
+
+@pytest.fixture(scope="function")
+def db_session():
+    """
+    Creates a fresh SQLite in-memory database for each test function.
+    Uses a shared in-memory database so all connections see the same tables.
+    """
+    # Patch BEFORE creating engine and tables
+    _patch_vector_columns()
+
+    engine = create_engine(
+        SQLITE_URL,
+        connect_args={"check_same_thread": False, "uri": True},
+        poolclass=StaticPool,  # Use a single connection pool
+    )
+
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    # Create all tables with patched column types
+    Base.metadata.create_all(bind=engine)
+
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=engine
+    )
+    session = TestingSessionLocal()
+    try:
+
+        yield session
+
+    finally:
+
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    """
+    FastAPI TestClient with the get_db dependency overridden
+    to use the SQLite in-memory session from db_session fixture.
+    """
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[session_get_db] = override_get_db
+    app.dependency_overrides[database_get_db] = override_get_db
+
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def registered_user_payload() -> dict:
+    """Valid registration payload for a test user."""
+    return {
+        "full_name": "Test User",
+        "email"    : "testuser@example.com",
+        "password" : "SecurePass123",
+        "age"      : 25
+    }
+
+
+@pytest.fixture
+def registered_user(client, registered_user_payload) -> dict:
+    """
+    Registers a user via the API and returns the response JSON.
+    Used as a base fixture for tests that require an existing user.
+    """
+    response = client.post(
+        "/api/v1/auth/register",
+        json=registered_user_payload
+    )
+    assert response.status_code == 201, (
+        f"Setup failed: could not register test user. "
+        f"Response: {response.json()}"
+    )
+    return response.json()
+
+
+@pytest.fixture
+def auth_token(client, registered_user_payload, registered_user) -> str:
+    """
+    Logs in the registered test user and returns the JWT access token.
+    Used as a base fixture for authenticated endpoint tests.
+    """
+    response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": registered_user_payload["email"],
+            "password": registered_user_payload["password"],
+        }
+    )
+    assert response.status_code == 200, (
+        f"Setup failed: could not login test user. "
+        f"Response: {response.json()}"
+    )
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def auth_headers(auth_token) -> dict:
+    """Returns Authorization header dict for authenticated requests."""
+    return {"Authorization": f"Bearer {auth_token}"}
 

@@ -1,3 +1,4 @@
+from unittest import result
 import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
@@ -147,15 +148,17 @@ class TestClearModels:
 class TestGetFaceEmbedding:
     """Tests for InferenceEngine.get_face_embedding()."""
 
-    def test_get_face_embedding_returns_embedding(self):
+    def test_get_face_embedding_returns_embedding(self, white_image_112x112):
         """
         get_face_embedding() must return the face embedding vector
         from the recognition model.
         """
         engine = _make_engine_with_mock_sessions()
-        embedding = engine.get_face_embedding(np.zeros((1, 3)))
+        embedding = engine.get_face_embedding(white_image_112x112)
         
-        assert embedding.shape == (1, 512)
+        assert isinstance(embedding, np.ndarray)
+        assert embedding is not None
+        assert embedding.shape == (512,)
         assert embedding.dtype == np.float32
         
         

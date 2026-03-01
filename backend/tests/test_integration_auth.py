@@ -27,7 +27,6 @@ async def _empty_lifespan(_app):
 # CRITICAL: Override the lifespan context manager BEFORE any TestClient is created
 app.router.lifespan_context = _empty_lifespan
 
-
 class VectorAsText(TypeDecorator):
     """
     SQLite-compatible replacement for pgvector's Vector type.

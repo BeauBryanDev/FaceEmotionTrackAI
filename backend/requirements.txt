@@ -49,3 +49,7 @@ pydantic[email]==2.9.2
 # ---AWS SKK ---
 boto3==1.28.7
 
+# CI/CD Workflow
+ruff==0.4.4
+
+
