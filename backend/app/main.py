@@ -10,6 +10,7 @@ from app.core.session import get_session
 from app.services.inference_engine import inference_engine
 from app.api.routers import auth, users
 from app.api.routers import emotions
+from app.api.routers import inference
 from app.api.websockets import stream
 from app.api.routers import analytics
 from app.core.logging import setup_logging, get_logger
@@ -61,6 +62,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 app.include_router(emotions.router, prefix="/api/v1/emotions", tags=["Emotions"])
+app.include_router(inference.router, prefix="/api/v1/inference", tags=["Inference"])
 app.include_router(stream.router, tags=["WebSockets"])
 app.include_router(
     analytics.router,

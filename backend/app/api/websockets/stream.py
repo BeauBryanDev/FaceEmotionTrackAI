@@ -135,7 +135,7 @@ async def websocket_endpoint(
                 
                 
                 try:
-                    # Extract data from your inference engine's output dictionary
+                    # Extract data from inference engine's output dictionary
                     dominant = emotion_result.get("dominant_emotion", "Neutral")
                     confidence = emotion_result.get("confidence", 0.0)
                     scores = emotion_result.get("emotion_scores", {}) #TODO , it has to be changed, I need to return all emotions scores, all of them.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
