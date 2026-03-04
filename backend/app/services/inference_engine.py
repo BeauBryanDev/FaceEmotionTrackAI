@@ -301,14 +301,19 @@ class InferenceEngine:
         input_name = session.get_inputs()[0].name
         raw_outputs = session.run(None, {input_name: input_tensor})
         
-        # The model outputs logits for two classes: [Fake, Real]
-        # We apply the Softmax function to convert these raw logits into probabilities
+        # The model outputs logits for three clasees not two at first thought, it make harship
+        # while debugging, thanks to the logs Found logica bug decoding MiniFASNETV2
+        # They are three clasess rather than two .
+        # Index 0 -> Spoof type 1  for printed photo spoofing attack 
+        # Indext 1 -> Spoof type 2 Digital screen attack
+        # Indext 2 -> Real / Live person  
+        # Then I apply the Softmax function to convert these raw logits into probabilities
         logits = raw_outputs[0].flatten()
         exp_logits = np.exp(logits - np.max(logits))
         probabilities = exp_logits / np.sum(exp_logits)
         print(f"Liveness probabilities: {probabilities}")
-        # Index 1 represents the "Real/Live" class
-        liveness_score = float(probabilities[1])
+        # Index 2 represents the "Real/Live" class
+        liveness_score = float(probabilities[2])
         
         if liveness_score < 0.60:                                        
             

@@ -188,7 +188,7 @@ What they cover:
 
 Counting tests:
 - There are **117 `def test_*` functions** in `backend/tests/`.
-- The user reports **116 tests passing**.
+- I Reports **116 tests passing**.
 
 Run tests locally:
 ```bash
@@ -227,3 +227,5 @@ backend/
 1. Generate a `.env` .ENV.EG template and include explicit DB_HOST/DB_PORT defaults for Docker.
 2. Add an endpoint for biometric enrollment status (`has_embedding`).
 3. Add a scheduled cleanup policy for `face_session_embeddings` if needed.
+
+- Still Working on this Project 'EmotiTrack'

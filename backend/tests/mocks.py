@@ -77,27 +77,34 @@ def make_mock_liveness_session(real_score: float = 0.92) -> MagicMock:
     """
     Mock for MiniFASNetV2 liveness detection model.
 
-    Real output: (1, 2) logits for [Real, Fake] classes.
-    We set logits so that after softmax, probabilities[1] == real_score.
-
+    Real output: (1, 3)  logits for x3 [Fake, Fake, Real] classes.
+    I set logits so that after softmax, probabilities[1] == real_score.
+    MiniFastNetV2 has three output classes, no two as first thought.
     Args:
         real_score: Desired liveness score after softmax (0.0 to 1.0).
                     Default 0.92 simulates a clearly live person.
     """
     # Important! Math to convert desired real_score to logits:
     
-    # If we want softmax([a, b])[1] = real_score:
-    # real_score = exp(b) / (exp(a) + exp(b))
-    # Setting a=0: real_score = exp(b) / (1 + exp(b))
-    # b = log(real_score / (1 - real_score))
+    # If we want softmax([a, b, c ])[2] = real_score:
+    # Setting a=0, b=0: real_score = exp(c) / (1 + 1 + exp(c))
+    # => exp(c) = real_score * (2 + exp(c))
+    # => exp(c) * (1 - real_score) = 2 * real_score
+    # => c = log(2 * real_score / (1 - real_score))
+
     import math
     
     epsilon = 1e-7
-    real_score = max(epsilon, min(1.0 - epsilon, real_score))
-    logit_real = math.log(real_score / (1.0 - real_score))
-    logits = np.array([[0.0, logit_real]], dtype=np.float32)
+    c = math.log((2 * real_score) / (1 - real_score))
+    logits = np.array([[0.0, 0.0, c]], dtype=np.float32)  # shape (1, 3)
+
+    mock_session = MagicMock()
+    mock_session.run.return_value = [logits]
+    mock_session.get_inputs.return_value = [MagicMock(name="input")]
     
-    return make_mock_session([logits])
+    return mock_session
+    
+    #return make_mock_session([logits])
 
 
 def make_mock_emotion_session(dominant_class_index: int = 4) -> MagicMock:

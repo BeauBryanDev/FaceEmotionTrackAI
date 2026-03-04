@@ -1,0 +1,5 @@
+const ws = new WebSocket('ws://localhost:8000/ws/stream?token=' + localStorage.getItem('token'))
+ws.onopen = () => console.log('OPEN')
+ws.onmessage = (e) => console.log('MSG:', e.data.slice(0, 100))
+ws.onerror = (e) => console.log('ERROR:', e)
+ws.onclose = (e) => console.log('CLOSE code:', e.code)

@@ -97,7 +97,7 @@ async def websocket_endpoint(
             # Liveness Detection
             liveness_score = inference_engine.check_liveness(face_crop)
             
-            is_live = liveness_score > 0.65
+            is_live = liveness_score > 0.55
             
             response_data = {
                 "status": "success",

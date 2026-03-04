@@ -273,8 +273,45 @@ class TestCheckLiveness:
         assert "liveness" in str(exc_info.value).lower()
         
         
-# Check Emotion
+    def test_check_liveness_returns_float(self, random_face_image_480x480):
+        """
+        check_liveness() must return a Python float.
+        """
+        engine = _make_engine_with_mock_sessions()
+        score = engine.check_liveness(random_face_image_480x480)
+        
+        assert isinstance(score, float)
+        
 
+    def test_check_liveness_high_score(self, random_face_image_480x480):
+        """
+        When the mock session is configured to return a high liveness score,
+        check_liveness() must return a value close to that score.
+        """
+        engine = InferenceEngine()
+        engine.sessions = {
+            "liveness": make_mock_liveness_session(real_score=0.92)
+        }
+        score = engine.check_liveness(random_face_image_480x480)
+        
+        assert score >= 0.85   
+
+
+    def test_check_liveness_low_score(self, random_face_image_480x480):
+        """
+        When the mock returns a low liveness score (spoof attack),
+        check_liveness() must return a value below 0.5.
+        """
+        engine = InferenceEngine()
+        engine.sessions = {
+            "liveness": make_mock_liveness_session(real_score=0.10)
+        }
+        score = engine.check_liveness(random_face_image_480x480)
+        assert score < 0.5
+        
+        
+        
+# Check Emotion
 class TestDetectEmotion:
     """Tests for InferenceEngine.detect_emotion()."""
     

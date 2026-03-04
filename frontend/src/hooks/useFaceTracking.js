@@ -10,18 +10,11 @@ export const useFaceTracking = () => {
   const [isConnected, setIsConnected] = useState(false)
   const [error,       setError]       = useState(null)
   const [videoReady,  setVideoReady]  = useState(false)
-  const [fps,         setFps]         = useState(0)
 
-  const videoRef        = useRef(null)
-  const wsRef           = useRef(null)
-  const canvasRef       = useRef(document.createElement('canvas'))
-  const connectingRef   = useRef(false)
-  // Request-response control: true = waiting for backend response, false = ready to send
-  const waitingRef      = useRef(false)
-  // RAF handle for the inference loop
-  const rafRef          = useRef(null)
-  // FPS counter
-  const fpsCounterRef   = useRef({ frames: 0, lastTime: performance.now() })
+  const videoRef    = useRef(null)
+  const wsRef       = useRef(null)
+  const canvasRef   = useRef(document.createElement('canvas'))
+  const rafRef      = useRef(null)
 
   // ---------------------------------------------------------------------------
   // 1. CAMERA
@@ -42,65 +35,117 @@ export const useFaceTracking = () => {
   }, [])
 
   // ---------------------------------------------------------------------------
-  // 2. WEBSOCKET - StrictMode safe
+  // 2. WEBSOCKET + INFERENCE LOOP
+  // Both live in the same effect so the RAF loop and the WS share the same
+  // "cancelled" flag and the same "waiting" variable. No ref leakage between
+  // StrictMode mount cycles.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!token) { setIsConnected(false); return }
-    if (connectingRef.current) return
-    connectingRef.current = true
+    if (!token || !isConnected) return
+    if (!videoReady) return
 
-    const ws = new WebSocket(getStreamUrl(token))
-    wsRef.current = ws
+    let cancelled = false
+    let waiting   = false       // request-response gate: local to this effect
+    let lastTime  = 0
+    const INTERVAL = 150        // ms between frames (~6-7 FPS, safe for 4 ONNX models on CPU)
 
-    ws.onopen = () => {
-      setIsConnected(true)
-      setError(null)
-      waitingRef.current = false
-    }
+    const ws = wsRef.current
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
 
+    // Override onmessage to use this effect's cancelled flag and waiting var
     ws.onmessage = (event) => {
-      // Mark as ready to send next frame BEFORE updating state
-      waitingRef.current = false
+      if (cancelled) return
+      waiting = false           // ungate: ready to send next frame
       try {
         const data = JSON.parse(event.data)
         setResults(data)
-
-        // FPS counter
-        const counter = fpsCounterRef.current
-        counter.frames++
-        const now = performance.now()
-        if (now - counter.lastTime >= 1000) {
-          setFps(counter.frames)
-          counter.frames  = 0
-          counter.lastTime = now
-        }
       } catch {
         setError('INVALID STREAM PAYLOAD')
       }
     }
 
-    ws.onclose = (event) => {
+    const sendFrame = (timestamp) => {
+      if (cancelled) return
+
+      if (timestamp - lastTime >= INTERVAL && !waiting) {
+        const video = videoRef.current
+        if (
+          video &&
+          video.readyState >= 2 &&
+          video.videoWidth > 0 &&
+          video.videoHeight > 0 &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+          const canvas  = canvasRef.current
+          canvas.width  = video.videoWidth
+          canvas.height = video.videoHeight
+          canvas.getContext('2d').drawImage(video, 0, 0)
+          const b64 = canvas.toDataURL('image/jpeg', 0.7)
+          waiting = true        // gate until onmessage resets it
+          ws.send(JSON.stringify({ image: b64 }))
+          lastTime = timestamp
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(sendFrame)
+    }
+
+    rafRef.current = requestAnimationFrame(sendFrame)
+
+    return () => {
+      cancelled = true
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+    }
+  }, [token, isConnected, videoReady])
+
+  // ---------------------------------------------------------------------------
+  // 3. WEBSOCKET CONNECTION - one effect, one connection
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!token) {
       setIsConnected(false)
-      connectingRef.current = false
-      waitingRef.current    = false
+      return
+    }
+
+    let cancelled = false
+    const ws = new WebSocket(getStreamUrl(token))
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      if (cancelled) return
+      setIsConnected(true)
+      setError(null)
+    }
+
+    // onmessage is overridden by the inference loop effect when active.
+    // This fallback handles messages received before videoReady.
+    ws.onmessage = (event) => {
+      if (cancelled) return
+      try {
+        setResults(JSON.parse(event.data))
+      } catch { /* ignore */ }
+    }
+
+    ws.onclose = (event) => {
+      if (cancelled) return
+      setIsConnected(false)
       if (event.code === 1008) {
         setError('AUTHENTICATION FAILED. TOKEN INVALID OR EXPIRED.')
       }
     }
 
     ws.onerror = () => {
+      if (cancelled) return
       setError('WEBSOCKET CONNECTION ERROR. BACKEND UNREACHABLE.')
-      connectingRef.current = false
-      waitingRef.current    = false
     }
 
     return () => {
-      connectingRef.current = false
-      waitingRef.current    = false
-      if (
-        ws.readyState === WebSocket.OPEN ||
-        ws.readyState === WebSocket.CONNECTING
-      ) {
+      cancelled = true
+      setIsConnected(false)
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close()
       }
       if (wsRef.current === ws) wsRef.current = null
@@ -108,77 +153,48 @@ export const useFaceTracking = () => {
   }, [token])
 
   // ---------------------------------------------------------------------------
-  // 3. FRAME CAPTURE
-  // Returns false if frame could not be captured or sent.
+  // 4. CLEANUP camera tracks on unmount
   // ---------------------------------------------------------------------------
-  const sendFrame = useCallback(() => {
-    const ws    = wsRef.current
+
+  useEffect(() => {
+  return () => {
     const video = videoRef.current
-
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-    if (!video || video.readyState < 2)           return
-    if (video.videoWidth === 0 || video.videoHeight === 0) return
-    if (waitingRef.current) return   // still waiting for previous response
-
-    const canvas  = canvasRef.current
-    canvas.width  = video.videoWidth
-    canvas.height = video.videoHeight
-
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    // Mark as waiting BEFORE sending to avoid race condition
-    waitingRef.current = true
-    ws.send(JSON.stringify({
-      image: canvas.toDataURL('image/jpeg', 0.7),
-    }))
-  }, [])
-
-  // ---------------------------------------------------------------------------
-  // 4. INFERENCE LOOP using requestAnimationFrame
-  // RAF throttled to max 15 FPS. Actual throughput is determined by the
-  // backend response time (request-response pattern).
-  // Using RAF instead of setInterval avoids running when tab is hidden,
-  // which was a secondary cause of CPU spikes.
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!isConnected || !videoReady) return
-
-    let lastFrameTime = 0
-    const FRAME_INTERVAL = 1000 / 15   // max 15 FPS
-
-    const loop = (timestamp) => {
-      if (timestamp - lastFrameTime >= FRAME_INTERVAL) {
-        sendFrame()
-        lastFrameTime = timestamp
-      }
-      rafRef.current = requestAnimationFrame(loop)
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach((t) => t.stop())
+      video.srcObject = null
     }
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    setVideoReady(false)  // reset for next mount
+    setResults(null)      // clear results on unmount
+    setIsConnected(false)
+  }
+}, [])
+  // useEffect(() => {
+  //   return () => {
+  //     const video = videoRef.current
+  //     if (video && video.srcObject) {
+  //       video.srcObject.getTracks().forEach((t) => t.stop())
+  //     }
+  //     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  //   }
+  // }, [])
 
-    rafRef.current = requestAnimationFrame(loop)
 
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
+useEffect(() => {
+  return () => {
+    // Solo limpia recursos del DOM y timers
+    // NUNCA setState aqui - el componente ya esta desmontado
+    const video = videoRef.current
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach((t) => t.stop())
+      video.srcObject = null
     }
-  }, [isConnected, videoReady, sendFrame])
-
-  // ---------------------------------------------------------------------------
-  // CLEANUP
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    return () => {
-      const video = videoRef.current
-      if (video && video.srcObject) {
-        video.srcObject.getTracks().forEach((t) => t.stop())
-      }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
     }
-  }, [])
+  }
+}, [])
 
   return {
     videoRef,
@@ -186,10 +202,6 @@ export const useFaceTracking = () => {
     isConnected,
     error,
     videoReady,
-    fps,
     startCamera,
   }
 }
-
-
-
