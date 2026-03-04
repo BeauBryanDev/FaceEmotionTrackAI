@@ -57,7 +57,8 @@ async def websocket_endpoint(
             faces = inference_engine.detect_faces(image , threshold=0.3 ) 
             
             if not faces:
-                await manager.send_personal_json({"status": "no_face_detected"}, user.id)
+                # Always respond on the same socket that sent this frame.
+                await websocket.send_json({"status": "no_face_detected"})
                 continue
 
             
@@ -94,21 +95,31 @@ async def websocket_endpoint(
                 
                 consecutive_low_ear_frames = 0
 
-            # Liveness Detection
+            # Liveness Detection with Multi-layer check
             liveness_score = inference_engine.check_liveness(face_crop)
             
-            is_live = liveness_score > 0.55
+            # Texture Analysis (Laplacian Variance) - Catch low-res prints/screens
+            gray = cv2.cvtColor(face_crop, cv2.COLOR_BGR2GRAY)
+            texture_variance = cv2.Laplacian(gray, cv2.CV_64F).var()
             
+            # COMBINED DECISION LOGIC:
+            # 1. Model must be confident (> 0.75)
+            # 2. Texture must be sharp enough (> 70.0) 
+            # Note: Paper prints often have lower variance than real skin or are unnaturally smooth/grainy.
+            is_live = (liveness_score > 0.75) and (texture_variance > 70.0)
+            
+            print(f"Liveness Check | Model: {liveness_score:.4f} | Texture: {texture_variance:.2f} | Final: {is_live}")
+
             response_data = {
                 "status": "success",
                 "bbox": bbox,
                 "liveness": {
                     "is_live": is_live,
-                    "score": float(liveness_score)
+                    "score": float(liveness_score),
+                    "texture_score": float(texture_variance)
                 }
             }
 
-  
             if is_live:
                 
                 #aligned_face = align_face(image, landmarks)
@@ -160,7 +171,9 @@ async def websocket_endpoint(
 
             response_data["geometry"] = geometry_data
             
-            await manager.send_personal_json(response_data, user.id)
+            # Keep request/response on the same websocket connection to avoid
+            # user-id map races during reconnects/dev StrictMode remounts.
+            await websocket.send_json(response_data)
 
     except WebSocketDisconnect:
         

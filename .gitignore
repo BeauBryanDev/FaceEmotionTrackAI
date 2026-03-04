@@ -251,5 +251,7 @@ get_models.py
 #Ignore Logs
 logs/*.log
 
+#NnOT LOGS ON MY TRACKING HISTORY 
+logs
 
 

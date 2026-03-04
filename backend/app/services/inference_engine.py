@@ -289,8 +289,8 @@ class InferenceEngine:
         # TODO , SEND THIS IMPORT LINE TO HEADER, DO NOT BE INSIDE THE FUNCTION, I NEED TO USE THIS FUNCTION IN OTHER PARTS OF THE CODE, NOT ONLY IN THIS FILE.
         from app.utils.image_processing import convert_and_resize, prepare_tensor_for_onnx
         
-        # MiniFASNetV2 operates on an 80x80 input resolution
-        resized_image = convert_and_resize(face_crop, (80, 80), to_rgb=True )
+        # MiniFASNetV2 operates on an 80x80 input resolution and typically expects BGR
+        resized_image = convert_and_resize(face_crop, (80, 80), to_rgb=False)
         
         input_tensor = prepare_tensor_for_onnx(
             resized_image, 

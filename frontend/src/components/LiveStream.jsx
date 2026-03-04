@@ -4,15 +4,14 @@ import { useFaceTracking } from '../hooks/useFaceTracking';
 import EmotionRadar from './EmotionRadar';
 
 const LiveStream = () => {
-  const { videoRef, results, isConnected, error, startCamera } = useFaceTracking();
+  const { videoRef, results, isConnected, error, startCamera, stopCamera } = useFaceTracking();
 
   useEffect(() => {
-    startCamera()
+    startCamera();
     return () => {
-      console.log('Cleaning up camera')
-    
-    }
-  }, [] );
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
 
   //  Secure JSON Structure Extraction 
   const hasFace = results?.status === "success";

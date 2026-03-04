@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { getStreamUrl } from '../api/inference'
@@ -6,195 +5,206 @@ import { getStreamUrl } from '../api/inference'
 export const useFaceTracking = () => {
   const { token } = useAuth()
 
-  const [results,     setResults]     = useState(null)
+  const [results, setResults] = useState(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [error,       setError]       = useState(null)
-  const [videoReady,  setVideoReady]  = useState(false)
+  const [error, setError] = useState(null)
+  const [videoReady, setVideoReady] = useState(false)
 
-  const videoRef    = useRef(null)
-  const wsRef       = useRef(null)
-  const canvasRef   = useRef(document.createElement('canvas'))
-  const rafRef      = useRef(null)
+  const videoRef = useRef(null)
+  const wsRef = useRef(null)
+  const streamRef = useRef(null)
+  const canvasRef = useRef(document.createElement('canvas'))
+  const rafRef = useRef(null)
+  const waitingRef = useRef(false)
+  const lastSentAtRef = useRef(0)
+  const mountedRef = useRef(true)
 
-  // ---------------------------------------------------------------------------
-  // 1. CAMERA
-  // ---------------------------------------------------------------------------
+  const safeSet = useCallback((setter, value) => {
+    if (!mountedRef.current) return
+    setter(value)
+  }, [])
+
+  const stopCamera = useCallback(() => {
+    const video = videoRef.current
+    if (video) {
+      video.oncanplay = null
+      video.onloadedmetadata = null
+      video.onplaying = null
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop())
+      streamRef.current = null
+    }
+    if (video && video.srcObject) {
+      video.srcObject = null
+    }
+    safeSet(setVideoReady, false)
+  }, [safeSet])
+
   const startCamera = useCallback(async () => {
     try {
-      setError(null)
+      safeSet(setError, null)
+      safeSet(setVideoReady, false)
+      waitingRef.current = false
+
+      // Always reset previous stream before requesting a new one.
+      stopCamera()
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, frameRate: { ideal: 15 } },
       })
-      if (!videoRef.current) return
-      videoRef.current.srcObject = stream
-      videoRef.current.oncanplay = () => setVideoReady(true)
+
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
+
+      streamRef.current = stream
+      const video = videoRef.current
+      if (!video) return
+
+      const markReady = () => safeSet(setVideoReady, true)
+      video.onloadedmetadata = markReady
+      video.oncanplay = markReady
+      video.onplaying = markReady
+      video.srcObject = stream
+      await video.play().catch(() => {
+        // Browser autoplay constraints can reject this promise; video may still play.
+      })
+      if (video.readyState >= 2) {
+        safeSet(setVideoReady, true)
+      }
     } catch (err) {
       console.error('Camera error:', err)
-      setError('CAMERA ACCESS DENIED. CHECK BROWSER PERMISSIONS.')
+      safeSet(setError, 'CAMERA ACCESS DENIED. CHECK BROWSER PERMISSIONS.')
     }
-  }, [])
+  }, [safeSet, stopCamera])
 
-  // ---------------------------------------------------------------------------
-  // 2. WEBSOCKET + INFERENCE LOOP
-  // Both live in the same effect so the RAF loop and the WS share the same
-  // "cancelled" flag and the same "waiting" variable. No ref leakage between
-  // StrictMode mount cycles.
-  // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!token || !isConnected) return
-    if (!videoReady) return
-
-    let cancelled = false
-    let waiting   = false       // request-response gate: local to this effect
-    let lastTime  = 0
-    const INTERVAL = 150        // ms between frames (~6-7 FPS, safe for 4 ONNX models on CPU)
-
-    const ws = wsRef.current
-    if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-    // Override onmessage to use this effect's cancelled flag and waiting var
-    ws.onmessage = (event) => {
-      if (cancelled) return
-      waiting = false           // ungate: ready to send next frame
-      try {
-        const data = JSON.parse(event.data)
-        setResults(data)
-      } catch {
-        setError('INVALID STREAM PAYLOAD')
-      }
-    }
-
-    const sendFrame = (timestamp) => {
-      if (cancelled) return
-
-      if (timestamp - lastTime >= INTERVAL && !waiting) {
-        const video = videoRef.current
-        if (
-          video &&
-          video.readyState >= 2 &&
-          video.videoWidth > 0 &&
-          video.videoHeight > 0 &&
-          ws.readyState === WebSocket.OPEN
-        ) {
-          const canvas  = canvasRef.current
-          canvas.width  = video.videoWidth
-          canvas.height = video.videoHeight
-          canvas.getContext('2d').drawImage(video, 0, 0)
-          const b64 = canvas.toDataURL('image/jpeg', 0.7)
-          waiting = true        // gate until onmessage resets it
-          ws.send(JSON.stringify({ image: b64 }))
-          lastTime = timestamp
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(sendFrame)
-    }
-
-    rafRef.current = requestAnimationFrame(sendFrame)
-
+    mountedRef.current = true
     return () => {
-      cancelled = true
+      mountedRef.current = false
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
+      stopCamera()
+      const ws = wsRef.current
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        ws.close()
+      }
+      wsRef.current = null
     }
-  }, [token, isConnected, videoReady])
+  }, [stopCamera])
 
-  // ---------------------------------------------------------------------------
-  // 3. WEBSOCKET CONNECTION - one effect, one connection
-  // ---------------------------------------------------------------------------
+  // WebSocket connection lifecycle.
   useEffect(() => {
     if (!token) {
-      setIsConnected(false)
+      safeSet(setIsConnected, false)
       return
     }
 
-    let cancelled = false
     const ws = new WebSocket(getStreamUrl(token))
     wsRef.current = ws
+    let cancelled = false
 
     ws.onopen = () => {
       if (cancelled) return
-      setIsConnected(true)
-      setError(null)
+      safeSet(setIsConnected, true)
+      safeSet(setError, null)
     }
 
-    // onmessage is overridden by the inference loop effect when active.
-    // This fallback handles messages received before videoReady.
     ws.onmessage = (event) => {
       if (cancelled) return
+      waitingRef.current = false
       try {
-        setResults(JSON.parse(event.data))
-      } catch { /* ignore */ }
+        safeSet(setResults, JSON.parse(event.data))
+      } catch {
+        safeSet(setError, 'INVALID STREAM PAYLOAD')
+      }
     }
 
     ws.onclose = (event) => {
       if (cancelled) return
-      setIsConnected(false)
+      safeSet(setIsConnected, false)
+      waitingRef.current = false
       if (event.code === 1008) {
-        setError('AUTHENTICATION FAILED. TOKEN INVALID OR EXPIRED.')
+        safeSet(setError, 'AUTHENTICATION FAILED. TOKEN INVALID OR EXPIRED.')
       }
     }
 
     ws.onerror = () => {
       if (cancelled) return
-      setError('WEBSOCKET CONNECTION ERROR. BACKEND UNREACHABLE.')
+      safeSet(setError, 'WEBSOCKET CONNECTION ERROR. BACKEND UNREACHABLE.')
     }
 
     return () => {
       cancelled = true
-      setIsConnected(false)
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close()
       }
-      if (wsRef.current === ws) wsRef.current = null
+      if (wsRef.current === ws) {
+        wsRef.current = null
+      }
     }
-  }, [token])
+  }, [token, safeSet])
 
-  // ---------------------------------------------------------------------------
-  // 4. CLEANUP camera tracks on unmount
-  // ---------------------------------------------------------------------------
-
+  // Frame capture loop.
   useEffect(() => {
-  return () => {
-    const video = videoRef.current
-    if (video && video.srcObject) {
-      video.srcObject.getTracks().forEach((t) => t.stop())
-      video.srcObject = null
-    }
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    setVideoReady(false)  // reset for next mount
-    setResults(null)      // clear results on unmount
-    setIsConnected(false)
-  }
-}, [])
-  // useEffect(() => {
-  //   return () => {
-  //     const video = videoRef.current
-  //     if (video && video.srcObject) {
-  //       video.srcObject.getTracks().forEach((t) => t.stop())
-  //     }
-  //     if (rafRef.current) cancelAnimationFrame(rafRef.current)
-  //   }
-  // }, [])
+    if (!isConnected || !videoReady) return
 
+    let cancelled = false
+    const intervalMs = 150
+    let lastTs = 0
 
-useEffect(() => {
-  return () => {
-    // Solo limpia recursos del DOM y timers
-    // NUNCA setState aqui - el componente ya esta desmontado
-    const video = videoRef.current
-    if (video && video.srcObject) {
-      video.srcObject.getTracks().forEach((t) => t.stop())
-      video.srcObject = null
+    const tick = (ts) => {
+      if (cancelled) return
+
+      if (ts - lastTs >= intervalMs && !waitingRef.current) {
+        const ws = wsRef.current
+        const video = videoRef.current
+
+        if (
+          ws &&
+          ws.readyState === WebSocket.OPEN &&
+          video &&
+          video.readyState >= 2 &&
+          video.videoWidth > 0 &&
+          video.videoHeight > 0
+        ) {
+          const canvas = canvasRef.current
+          canvas.width = video.videoWidth
+          canvas.height = video.videoHeight
+          const ctx = canvas.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+            waitingRef.current = true
+            lastSentAtRef.current = ts
+            ws.send(JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.7) }))
+            lastTs = ts
+          }
+        }
+      }
+
+      // Prevent permanent freeze if one backend response is missed.
+      if (waitingRef.current && ts - lastSentAtRef.current > 2500) {
+        waitingRef.current = false
+      }
+
+      rafRef.current = requestAnimationFrame(tick)
     }
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
+
+    rafRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      cancelled = true
+      waitingRef.current = false
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
     }
-  }
-}, [])
+  }, [isConnected, videoReady])
 
   return {
     videoRef,
@@ -203,5 +213,6 @@ useEffect(() => {
     error,
     videoReady,
     startCamera,
+    stopCamera,
   }
 }
