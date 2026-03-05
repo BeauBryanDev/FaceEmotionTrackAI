@@ -45,3 +45,18 @@ class EmotionResponse(EmotionBase):
 
     class Config:
         from_attributes = True
+        
+        
+class EmotionSaveRequest(EmotionBase):
+    """
+    Payload sent by the frontend when the user clicks 'SAVE EMOTION'.
+    Contains the current inference result from the WebSocket stream.
+
+    Inherits from EmotionBase:
+        - dominant_emotion: str
+        - confidence: float (0.0 to 1.0)
+        - emotion_scores: Optional[Dict[str, float]]
+        - user_note: Optional[str]
+    """
+    pass
+

@@ -3,8 +3,13 @@ import { Activity, ShieldCheck, ShieldAlert, Eye, Zap, AlertTriangle, Cpu } from
 import { useFaceTracking } from '../hooks/useFaceTracking';
 import EmotionRadar from './EmotionRadar';
 
+import { useState } from 'react'
+import { saveEmotion } from '../api/emotions'
+
 const LiveStream = () => {
   const { videoRef, results, isConnected, error, startCamera, stopCamera } = useFaceTracking();
+  const [saveStatus, setSaveStatus] = useState('IDLE') // IDLE | SAVING | SAVED | ERROR
+  
 
   useEffect(() => {
     startCamera();
@@ -34,6 +39,36 @@ const LiveStream = () => {
       height: `${((y2 - y1) / 480) * 100}%`,
     };
   };
+
+  const handleSaveEmotion = async () => {
+  if (!hasFace || !liveness?.is_live || !results?.emotion) return
+  setSaveStatus('SAVING')
+  try {
+    await saveEmotion({
+      dominant_emotion: results.emotion.dominant_emotion,
+      confidence:       results.emotion.confidence,
+      emotion_scores:   results.emotion.emotion_scores ?? null,
+    })
+    setSaveStatus('SAVED')
+    setTimeout(() => setSaveStatus('IDLE'), 2000)
+  } catch (error) {
+    setSaveStatus('ERROR')
+    setTimeout(() => setSaveStatus('IDLE'), 2000)
+  } 
+}
+
+const EMOTION_ADJECTIVES = {
+  Happiness: 'Happy',
+  Sadness:   'Sad',
+  Anger:     'Angry',
+  Fear:      'Scared',
+  Disgust:   'Disgusted',
+  Surprise:  'Surprised',
+  Contempt:  'Contemptuous',
+  Neutral:   'Neutral',
+}
+
+const emotionAdjective = EMOTION_ADJECTIVES[emotion] ?? emotion
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid font-body">
@@ -108,6 +143,92 @@ const LiveStream = () => {
           <div className={`font-display text-4xl font-black uppercase tracking-wider ${hasFace ? 'text-neon-purple text-shadow-neon' : 'text-purple-700'}`}>
             {emotion}
           </div>
+        </div>
+
+        {/* BLOCK 2,  SAVE EMOTION */}
+        <div style={{
+          background: 'rgba(19,0,32,0.9)',
+          border: '1px solid rgba(170,0,255,0.2)',
+          padding: '1rem 1.25rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+          position: 'relative',
+        }}>
+          {/* Corner decorations */}
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 10, height: 10,
+            borderTop: '1px solid rgba(170,0,255,0.4)',
+            borderLeft: '1px solid rgba(170,0,255,0.4)' }} />
+          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10,
+            borderBottom: '1px solid rgba(170,0,255,0.4)',
+            borderRight: '1px solid rgba(170,0,255,0.4)' }} />
+
+          {/* "You are feeling" text */}
+          <div style={{
+            fontFamily: 'Share Tech Mono, monospace',
+            fontSize: '0.65rem',
+            letterSpacing: '0.15em',
+            color: hasFace && liveness?.is_live
+              ? 'rgba(170,0,255,0.7)'
+              : 'rgba(170,0,255,0.25)',
+            textAlign: 'center',
+          }}>
+            {hasFace && liveness?.is_live
+              ? <>YOU ARE FEELING <span style={{
+                  color: '#cc44ff',
+                  fontWeight: 700,
+                  textShadow: '0 0 8px rgba(170,0,255,0.5)',
+                }}>{emotionAdjective}</span></>
+              : 'AWAITING LIVE FACE...'}
+          </div>
+
+          {/* SAVE EMOTION button */}
+          <button
+            onClick={handleSaveEmotion}
+            disabled={!hasFace || !liveness?.is_live || saveStatus === 'SAVING'}
+            style={{
+              width: '100%',
+              padding: '0.7rem',
+              fontFamily: 'Orbitron, monospace',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              cursor: (!hasFace || !liveness?.is_live || saveStatus === 'SAVING')
+                ? 'not-allowed'
+                : 'pointer',
+              transition: 'all 0.2s',
+              border: '1px solid',
+              // Color changes based on save state
+              background: saveStatus === 'SAVED'  ? 'rgba(0,255,136,0.1)'
+                        : saveStatus === 'ERROR'  ? 'rgba(255,0,80,0.1)'
+                        : saveStatus === 'SAVING' ? 'rgba(170,0,255,0.1)'
+                        : hasFace && liveness?.is_live
+                          ? 'linear-gradient(135deg, rgba(102,0,179,0.6), rgba(170,0,255,0.6))'
+                          : 'rgba(170,0,255,0.05)',
+              borderColor: saveStatus === 'SAVED'  ? 'rgba(0,255,136,0.5)'
+                        : saveStatus === 'ERROR'  ? 'rgba(255,0,80,0.5)'
+                        : saveStatus === 'SAVING' ? 'rgba(170,0,255,0.3)'
+                        : hasFace && liveness?.is_live
+                          ? 'rgba(170,0,255,0.6)'
+                          : 'rgba(170,0,255,0.15)',
+              color: saveStatus === 'SAVED'  ? '#00ff88'
+                  : saveStatus === 'ERROR'  ? '#ff4466'
+                  : saveStatus === 'SAVING' ? 'rgba(240,204,255,0.5)'
+                  : hasFace && liveness?.is_live
+                    ? '#f0ccff'
+                    : 'rgba(170,0,255,0.25)',
+              boxShadow: saveStatus === 'SAVED' ? '0 0 16px rgba(0,255,136,0.2)'
+                      : hasFace && liveness?.is_live && saveStatus === 'IDLE'
+                        ? '0 0 16px rgba(170,0,255,0.2)'
+                        : 'none',
+            }}
+          >
+            {saveStatus === 'SAVING' ? 'SAVING...'
+          : saveStatus === 'SAVED'  ? 'SAVED'
+          : saveStatus === 'ERROR'  ? 'ERROR - RETRY'
+          : hasFace && liveness?.is_live ? 'READY - SAVE EMOTION' : 'SAVE EMOTION' }
+          </button>
         </div>
 
         {/* BLOCK 2,  RADAR */}

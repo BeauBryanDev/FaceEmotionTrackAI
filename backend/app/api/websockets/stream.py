@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import json
 import numpy as np
 import cv2
-import asyncio
+#import asyncio
 
 from app.core.session import get_db
 from app.api.websockets.manager import manager
@@ -11,7 +11,7 @@ from app.api.dependencies import get_user_from_token
 from app.services.inference_engine import inference_engine
 from app.utils.image_processing import decode_base64_image, align_face
 from app.services.face_math import verify_biometric_match
-from app.models.emotions import Emotion 
+#from app.models.emotions import Emotion 
 from app.services.face_geometry import analyze_face_geometry
 
 
@@ -113,7 +113,7 @@ async def websocket_endpoint(
             #   - Real faces:     EAR > 0.12 (eyes have depth and structure)
             #   - Printed photos: EAR ~ 0.00 (flat surface, no ocular geometry)
             # Note: bool() cast required - numpy.bool_ is not JSON serializable.
-            is_live = bool(liveness_score > 0.65 and ear_value > 0.125 and texture_variance > 70 )
+            #is_live = bool(liveness_score > 0.65 and ear_value > 0.125 and texture_variance > 70 )
 
             #print(f"Liveness | Model: {liveness_score:.4f} | EAR: {ear_value:.4f} | Final: {is_live}")
 
@@ -155,32 +155,7 @@ async def websocket_endpoint(
                 emotion_result = inference_engine.detect_emotion(aligned_face)
                 response_data["emotion"] = emotion_result
                 
-                
-                try:
-                    # Extract data from inference engine's output dictionary
-                    dominant = emotion_result.get("dominant_emotion", "Neutral")
-                    confidence = emotion_result.get("confidence", 0.0)
-                    scores = emotion_result.get("emotion_scores", {}) #TODO , it has to be changed, I need to return all emotions scores, all of them.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
-
-                    # Create the record using the SQLAlchemy model
-                    new_emotion_record = Emotion(
-                        user_id=user.id,
-                        dominant_emotion=dominant,
-                        confidence=float(confidence),  # Cast to float to avoid numpy type issues
-                        emotion_scores=scores          # PostgreSQL will automatically cast this dict to JSONB
-                    )
-                    # db thread is separate from the main event loop, so we use run_in_executor to avoid blocking
-                    db.add(new_emotion_record)
-                    
-                    # DO NOT commit in the main thread, it blocks the WebSocket loop.
-                    # We ONLY use the executor for the commit.
-                    await asyncio.get_event_loop().run_in_executor(None, db.commit)
-                    
-                except Exception as db_error:
-                    # Rollback the transaction on error so the session isn't poisoned
-                    db.rollback()
-                    print(f"Failed to save emotion to DB for user {user.id}: {str(db_error)}")
-
+            
             response_data["geometry"] = geometry_data
             
             # Keep request/response on the same websocket connection to avoid
@@ -196,3 +171,32 @@ async def websocket_endpoint(
         print(f"Error en el stream del usuario {user.id}: {str(e)}")
         
         manager.disconnect(user.id)
+
+
+
+# before it used to save emotion in the database, now it is only returning the emotion result to the client
+#async def save_emotion(emotion_result, user):
+#  try:
+#                     # Extract data from inference engine's output dictionary
+#                     dominant = emotion_result.get("dominant_emotion", "Neutral")
+#                     confidence = emotion_result.get("confidence", 0.0)
+#                     scores = emotion_result.get("emotion_scores", {}) #TODO , it has to be changed, I need to return all emotions scores, all of them.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
+
+#                     # Create the record using the SQLAlchemy model
+#                     new_emotion_record = Emotion(
+#                         user_id=user.id,
+#                         dominant_emotion=dominant,
+#                         confidence=float(confidence),  # Cast to float to avoid numpy type issues
+#                         emotion_scores=scores          # PostgreSQL will automatically cast this dict to JSONB
+#                     )
+#                     # db thread is separate from the main event loop, so we use run_in_executor to avoid blocking
+#                     db.add(new_emotion_record)
+            
+#                     # DO NOT commit in the main thread, it blocks the WebSocket loop.
+#                     # We ONLY use the executor for the commit.
+#                     await asyncio.get_event_loop().run_in_executor(None, db.commit)
+            
+#                 except Exception as db_error:
+#                     # Rollback the transaction on error so the session isn't poisoned
+#                     db.rollback()
+#                     print(f"Failed to save emotion to DB for user {user.id}: {str(db_error)}")

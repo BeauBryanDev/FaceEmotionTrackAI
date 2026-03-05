@@ -98,20 +98,6 @@ async def infer_frame_emotion(
     # 3) Emotion
     emotion_result = inference_engine.detect_emotion(aligned_face_rgb)
 
-    # Persist emotion inference for history endpoints.
-    try:
-        new_record = Emotion(
-            user_id=current_user.id,
-            dominant_emotion=emotion_result.get("dominant_emotion", "Neutral"),
-            confidence=float(emotion_result.get("confidence", 0.0)),
-            emotion_scores=emotion_result.get("emotion_scores", {}),
-        )
-        db.add(new_record)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.warning(f"Emotion persistence failed: {e}")
-
     return {
         "status": "success",
         "bbox": bbox,

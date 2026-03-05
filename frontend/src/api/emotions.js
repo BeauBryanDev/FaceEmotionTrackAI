@@ -37,3 +37,12 @@ export const getEmotionScoresChart = async () => {
   const response = await api.get('/emotions/scores/chart')
   return response.data
 }
+/**
+ * Saves the current emotion inference result to the database.
+ * Called explicitly when the user clicks "SAVE EMOTION" in LiveStream.
+ * @param {object} payload - { dominant_emotion, confidence, emotion_scores, user_note }
+ */
+export const saveEmotion = async (payload) => {
+  const response = await api.post('/emotions/save', payload)
+  return response.data
+}

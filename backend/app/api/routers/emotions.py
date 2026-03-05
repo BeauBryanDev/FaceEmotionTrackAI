@@ -9,6 +9,8 @@ from app.core.logging import get_logger
 from app.api.dependencies import get_current_active_user
 from app.models.users import User
 from app.models.emotions import Emotion
+from app.schemas.emotion_schema import EmotionSaveRequest
+
 
 router = APIRouter()
 
@@ -400,3 +402,77 @@ async def get_emotion_scores_chart(
             for key, value in aggregation.emotion_scores.items()
         ],
     }   
+    
+
+# POST /api/v1/emotions/save
+@router.post("/save", status_code=status.HTTP_201_CREATED)
+async def save_emotion(
+    payload:      EmotionSaveRequest,
+    current_user: User    = Depends(get_current_active_user),
+    db:           Session = Depends(get_db),
+) -> dict:
+    """
+    Persists a single emotion inference result to the emotions table.
+
+    This endpoint is the ONLY write path to the emotions table.
+    The WebSocket stream (stream.py) and REST inference (inference.py)
+    no longer auto-save - they only return results to the client.
+
+    The user decides when to save by clicking the "SAVE EMOTION" button
+    in the LiveStream UI.
+
+    Args:
+        payload: dominant_emotion, confidence, emotion_scores from the
+                 current WebSocket inference result.
+
+    Returns:
+        The newly created emotion record.
+    """
+    if payload.dominant_emotion not in VALID_EMOTIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Emocion invalida: '{payload.dominant_emotion}'. "
+                   f"Valores validos: {VALID_EMOTIONS}"
+        )
+
+    try:
+        new_record = Emotion(
+            user_id          = current_user.id,
+            dominant_emotion = payload.dominant_emotion,
+            confidence       = float(payload.confidence),
+            emotion_scores   = payload.emotion_scores,
+        )
+        db.add(new_record)
+        db.commit()
+        db.refresh(new_record)
+
+        logger.info(
+            f"Emotion saved manually by user. "
+            f"emotion={new_record.dominant_emotion} "
+            f"confidence={new_record.confidence:.4f} "
+            f"id={new_record.id}",
+            extra={"user_id": current_user.id}
+        )
+
+    except Exception as e:
+        
+        db.rollback()
+        logger.error(
+            f"Failed to save emotion for user {current_user.id}: {e}",
+            exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to persist emotion record.",
+        )
+
+    return {
+        
+        "id"              : new_record.id,
+        "user_id"         : new_record.user_id,
+        "dominant_emotion": new_record.dominant_emotion,
+        "confidence"      : round(new_record.confidence, 4),
+        "emotion_scores"  : new_record.emotion_scores,
+        "timestamp"       : new_record.timestamp.isoformat(),
+        "message"         : "Emotion saved successfully.",
+    }
