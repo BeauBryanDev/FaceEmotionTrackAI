@@ -144,7 +144,7 @@ export const useFaceTracking = () => {
         ws.close()
       }
       if (wsRef.current === ws) {
-        wsRef.current = null
+        wsRef.current = null;
       }
     }
   }, [token, safeSet])
@@ -153,57 +153,53 @@ export const useFaceTracking = () => {
   useEffect(() => {
     if (!isConnected || !videoReady) return
 
-    let cancelled = false
-    const intervalMs = 150
-    let lastTs = 0
+    const intervalMs = 300
 
-    const tick = (ts) => {
-      if (cancelled) return
+    const interval = setInterval(() => {
 
-      if (ts - lastTs >= intervalMs && !waitingRef.current) {
-        const ws = wsRef.current
-        const video = videoRef.current
+      if (waitingRef.current) return
 
-        if (
-          ws &&
-          ws.readyState === WebSocket.OPEN &&
-          video &&
-          video.readyState >= 2 &&
-          video.videoWidth > 0 &&
-          video.videoHeight > 0
-        ) {
-          const canvas = canvasRef.current
-          canvas.width = video.videoWidth
-          canvas.height = video.videoHeight
-          const ctx = canvas.getContext('2d')
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-            waitingRef.current = true
-            lastSentAtRef.current = ts
-            ws.send(JSON.stringify({ image: canvas.toDataURL('image/jpeg', 0.7) }))
-            lastTs = ts
-          }
-        }
+      const ws = wsRef.current
+      const video = videoRef.current
+
+      if (
+        ws &&
+        ws.readyState === WebSocket.OPEN &&
+        video &&
+        video.readyState >= 2 &&
+        video.videoWidth > 0 &&
+        video.videoHeight > 0
+      ) {
+        const canvas = canvasRef.current
+
+        const TARGET_WIDTH = 320
+        const TARGET_HEIGHT = 240
+
+        canvas.width = TARGET_WIDTH
+        canvas.height = TARGET_HEIGHT
+
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) return
+
+        ctx.drawImage(video, 0, 0, TARGET_WIDTH, TARGET_HEIGHT)
+
+        waitingRef.current = true
+
+        ws.send(
+          JSON.stringify({
+            image: canvas.toDataURL('image/jpeg', 0.5)
+          })
+        )
       }
 
-      // Prevent permanent freeze if one backend response is missed.
-      if (waitingRef.current && ts - lastSentAtRef.current > 2500) {
-        waitingRef.current = false
-      }
-
-      rafRef.current = requestAnimationFrame(tick)
-    }
-
-    rafRef.current = requestAnimationFrame(tick)
+    }, intervalMs)
 
     return () => {
-      cancelled = true
+      clearInterval(interval)
       waitingRef.current = false
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
     }
+
   }, [isConnected, videoReady])
 
   return {
