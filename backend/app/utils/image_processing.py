@@ -95,8 +95,8 @@ def convert_and_resize(
     if to_rgb:
         return cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB)
     
-    print(image.shape)
-    print(resized_image.shape)
+    #print(image.shape)
+    #print(resized_image.shape)
     return resized_image
 
 def prepare_tensor_for_onnx(
@@ -128,9 +128,9 @@ def prepare_tensor_for_onnx(
     chw_image = np.transpose(normalized_img, (2, 0, 1))
     
     # Add the batch dimension (N) to create NCHW shape
-    print(chw_image.shape)
+    #print(chw_image.shape)
     tensor = np.expand_dims(chw_image, axis=0)
-    print(tensor.shape)
+    #print(tensor.shape)
     return tensor
 
 

@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 import json
 import numpy as np
 import cv2
-#import asyncio
+#import asynci0
+import time 
+from starlette.concurrency import run_in_threadpool
 
 from app.core.session import get_db
 from app.api.websockets.manager import manager
@@ -13,7 +15,10 @@ from app.utils.image_processing import decode_base64_image, decode_jpeg_bytes, a
 from app.services.face_math import verify_biometric_match
 #from app.models.emotions import Emotion 
 from app.services.face_geometry import analyze_face_geometry
+from app.core.logging import get_logger
 
+
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -36,10 +41,14 @@ async def websocket_endpoint(
     await manager.connect(user.id, websocket)
     
     consecutive_low_ear_frames = 0
+    previous_gray = None
+    MOTION_THRESHOLD = 2.0
 
     try:
         
+        
         while True:
+            
             # Receive frame from frontend.
             # Supports both binary JPEG frames and legacy JSON/base64 payloads.
             ws_message = await websocket.receive()
@@ -57,6 +66,7 @@ async def websocket_endpoint(
                                         
                     continue
                 
+                
                 payload = json.loads(raw_text)
                 
                 base64_string = payload.get("image")
@@ -70,17 +80,41 @@ async def websocket_endpoint(
             if image is None:
                 
                 continue
-
-            # Decodificar imagen
-
-            # ML Pipeline
-            faces = inference_engine.detect_faces(image , threshold=0.3 ) 
             
+            metrics = {}
+     
+            # Cheap motion detection
+            gray_small = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            gray_small = cv2.resize(gray_small, (160, 120))
+
+            if previous_gray is not None:
+
+                frame_diff = cv2.absdiff(previous_gray, gray_small)
+                motion_score = np.mean(frame_diff)
+
+                if motion_score < MOTION_THRESHOLD:
+                    # skip heavy ML pipeline
+                    continue
+
+            previous_gray = gray_small
+
+
+            # Decode images 
+            start = time.perf_counter()
+            # ML Pipeline
+            #faces = inference_engine.detect_faces(image , threshold=0.3 ) 
+            faces = await run_in_threadpool(
+                inference_engine.detect_faces,
+                image,
+                0.3
+            )
+                        
             if not faces:
                 # Always respond on the same socket that sent this frame.
                 await websocket.send_json({"status": "no_face_detected"})
                 continue
 
+            metrics["face_detection_ms"] = round((time.perf_counter() - start) * 1000, 2)
             
             primary_face = faces[0]
             bbox = primary_face.get("bbox")
@@ -122,9 +156,10 @@ async def websocket_endpoint(
             
             # Extract EAR from geometry data already computed above
             ear_value = geometry_data["ear"]["ear"]
-
+            
+            start = time.perf_counter()
             # Liveness check - MiniFASNetV2
-            liveness_score = inference_engine.check_liveness(face_crop)
+            liveness_score = await run_in_threadpool(inference_engine.check_liveness, face_crop)
 
             # COMBINED ANTI-SPOOFING DECISION
             # MiniFASNetV2 alone is insufficient for printed photo attacks on
@@ -134,7 +169,7 @@ async def websocket_endpoint(
             #   - Printed photos: EAR ~ 0.00 (flat surface, no ocular geometry)
             # Note: bool() cast required - numpy.bool_ is not JSON serializable.
             #is_live = bool(liveness_score > 0.65 and ear_value > 0.125 and texture_variance > 70 )
-
+            metrics["liveness_ms"] = round((time.perf_counter() - start) * 1000, 2)
             #print(f"Liveness | Model: {liveness_score:.4f} | EAR: {ear_value:.4f} | Final: {is_live}")
 
             is_live = bool( liveness_score > 0.65 and ear_value > 0.125 )  
@@ -150,6 +185,9 @@ async def websocket_endpoint(
                     "texture_score": float(texture_variance)
                 }
             }
+            logger.info(
+                f"Liveness | score={liveness_score:.4f} ear={ear_value:.4f} live={is_live}"
+            )
 
             if is_live:
                 
@@ -160,7 +198,14 @@ async def websocket_endpoint(
                
                 if user.face_embedding is not None:
                     stored_vector = np.array(user.face_embedding, dtype=np.float32)
-                    live_vector = inference_engine.get_face_embedding(aligned_face)
+                    
+                    
+                    live_vector = await run_in_threadpool(
+                        inference_engine.get_face_embedding,
+                        aligned_face
+                        )
+                    
+                    metrics["embedding_ms"] = round((time.perf_counter() - start) * 1000, 2)
                     
                     is_match, similarity = verify_biometric_match(stored_vector, live_vector)
                     
@@ -169,14 +214,23 @@ async def websocket_endpoint(
                         "similarity_score": float(similarity)
                     }
                 else:
+                    
                     response_data["biometrics"] = {"message": "No biometric template found"}
 
                 
-                emotion_result = inference_engine.detect_emotion(aligned_face)
+                start = time.perf_counter()
+                
+                emotion_result = await run_in_threadpool( inference_engine.detect_emotion,
+                                                         aligned_face )
+                
+                metrics["emotion_ms"] = round((time.perf_counter() - start) * 1000, 2)
+                
                 response_data["emotion"] = emotion_result
                 
             
             response_data["geometry"] = geometry_data
+            response_data["metrics"] = metrics
+
             
             # Keep request/response on the same websocket connection to avoid
             # user-id map races during reconnects/dev StrictMode remounts.
@@ -194,29 +248,3 @@ async def websocket_endpoint(
 
 
 
-# before it used to save emotion in the database, now it is only returning the emotion result to the client
-#async def save_emotion(emotion_result, user):
-#  try:
-#                     # Extract data from inference engine's output dictionary
-#                     dominant = emotion_result.get("dominant_emotion", "Neutral")
-#                     confidence = emotion_result.get("confidence", 0.0)
-#                     scores = emotion_result.get("emotion_scores", {}) #TODO , it has to be changed, I need to return all emotions scores, all of them.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
-
-#                     # Create the record using the SQLAlchemy model
-#                     new_emotion_record = Emotion(
-#                         user_id=user.id,
-#                         dominant_emotion=dominant,
-#                         confidence=float(confidence),  # Cast to float to avoid numpy type issues
-#                         emotion_scores=scores          # PostgreSQL will automatically cast this dict to JSONB
-#                     )
-#                     # db thread is separate from the main event loop, so we use run_in_executor to avoid blocking
-#                     db.add(new_emotion_record)
-            
-#                     # DO NOT commit in the main thread, it blocks the WebSocket loop.
-#                     # We ONLY use the executor for the commit.
-#                     await asyncio.get_event_loop().run_in_executor(None, db.commit)
-            
-#                 except Exception as db_error:
-#                     # Rollback the transaction on error so the session isn't poisoned
-#                     db.rollback()
-#                     print(f"Failed to save emotion to DB for user {user.id}: {str(db_error)}")

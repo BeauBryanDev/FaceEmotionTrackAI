@@ -84,21 +84,21 @@ class InferenceEngine:
             
             input_size = (640, 640)
             original_height, original_width = image.shape[:2]
-            print(f"Input image shape: {image.shape}")
+     
             # Resize and convert BGR to RGB
             resized_image = convert_and_resize(image, input_size, to_rgb=True)
-            print(f"Resized image shape: {resized_image.shape}")
+
             # InsightFace SCRFD standard normalization: (pixel_value - 127.5) / 128.0
             # This centers the data around 0 with a standard deviation of 1.
             image_float = resized_image.astype(np.float32)
             image_normalized = (image_float - 127.5) / 128.0
             chw_image = np.transpose(image_normalized, (2, 0, 1))
             input_tensor = np.expand_dims(chw_image, axis=0)
-            print(f"Input tensor shape: {input_tensor.shape}") 
+            #print(f"Input tensor shape: {input_tensor.shape}")
             # Execute the ONNX runtime session
             input_name = session.get_inputs()[0].name
             raw_outputs = session.run(None, {input_name: input_tensor})
-            print(f"Raw outputs: {len(raw_outputs)} tensors")
+            
             # SCRFD outputs multiple tensors representing bounding box regressions, 
             # classification scores, and landmark predictions across different stride levels.
             # In a full production environment, these raw outputs are decoded using 
@@ -177,7 +177,6 @@ class InferenceEngine:
                     "landmarks": np.array(landmarks)
                 })
                 
-                logger.info(f"Face detectada: {total_faces[-1]}")
 
         return self._apply_nms(total_faces, iou_threshold=0.4, original_size=original_size, input_size=input_size)
     
@@ -249,10 +248,10 @@ class InferenceEngine:
             mean=0.5, 
             std=0.5
         )
-        print(f"Input tensor shape: {input_tensor.shape}") 
+        #print(f"Input tensor shape: {input_tensor.shape}") 
         input_name = session.get_inputs()[0].name
         raw_outputs = session.run(None, {input_name: input_tensor})
-        print(f"Raw embedding shape: {raw_outputs[0].shape}")
+        #print(f"Raw embedding shape: {raw_outputs[0].shape}")
         # The output is a batch of embeddings, shape (1, 512)
         # We extract the first element and flatten it to a 1D array
         embedding = raw_outputs[0].flatten()
@@ -265,8 +264,8 @@ class InferenceEngine:
             
         logger.info(f"Embedding extraido. Norma L2: {norm:.4f}")
         
-        print(f"Embedding norm: {norm:.4f}")
-        print(f"Inference time: {time.time() - start:.4f}s")
+        #print(f"Embedding norm: {norm:.4f}")
+        #print(f"Inference time: {time.time() - start:.4f}s")
         
         return embedding
     
