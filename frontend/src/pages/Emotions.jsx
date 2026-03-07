@@ -5,6 +5,9 @@ import EmotionRadar from '../components/EmotionRadar'
 import EmotionDistributionPie from '../components/EmotionDistributionPie'
 import SentimentDoughnut from '../components/SentimentDoughnut'
 import EmotionHistoryHistogram from '../components/EmotionHistoryHistogram'
+import ConfidenceRadar from '../components/ui/ConfidentRadar'
+
+
 
 const Emotions = () => {
   const [summary, setSummary] = useState(null)
@@ -15,12 +18,16 @@ const Emotions = () => {
   const [selectedEmotion, setSelectedEmotion] = useState('Happiness')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [entropy, setEntropy] = useState(null)
+
 
   const formatTs = (iso) => {
     if (!iso) return ''
     const d = new Date(iso)
+
     return d.toISOString().replace('T', ' ').substring(0, 19)
   }
+  const entropyForRadar = entropy ?? recent?.[0]?.entropy ?? null
 
   useEffect(() => {
     const run = async () => {
@@ -36,6 +43,7 @@ const Emotions = () => {
         ])
         setSummary(summaryData)
         setScores(scoreData?.records?.[0]?.emotion_scores || null)
+        setEntropy(scoreData?.records?.[0]?.entropy ?? null)
         setRecent(historyData?.records || [])
         setChart(chartData)
         setDetails(detailsData)
@@ -138,6 +146,19 @@ const Emotions = () => {
               </div>
             </div>
           </div>
+
+          {/* CONFIDENCE RADAR */}
+          <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative">
+            <div className="p-4 flex flex-col h-[220px]">
+              <Text variant="subtext" className="text-[10px] text-purple-400 mb-2">
+                02 // MODEL_CONFIDENCE
+              </Text>
+
+              <div className="flex-1">
+                <ConfidenceRadar entropy={entropyForRadar} />
+              </div>
+            </div>
+         </div>
         </div>
 
         {/* COLUMN 2: DISTRIBUTION & HISTOGRAM */}
@@ -215,6 +236,11 @@ const Emotions = () => {
                     <div className="flex justify-between items-center px-2">
                       <span className="font-mono text-[11px] text-purple-200 uppercase group-hover:text-neon-purple transition-colors">{r.dominant_emotion}</span>
                       <span className="font-mono text-[11px] text-neon-purple font-black">{(r.confidence * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="px-2">
+                      <span className="font-mono text-[9px] text-purple-500">
+                        ENTROPY: {r.entropy !== null && r.entropy !== undefined ? Number(r.entropy).toFixed(3) : '--'}
+                      </span>
                     </div>
                   </div>
                 ))}

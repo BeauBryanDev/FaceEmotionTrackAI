@@ -4,6 +4,7 @@ import { useFaceTracking } from '../hooks/useFaceTracking';
 import EmotionRadar from './EmotionRadar';
 import { saveEmotion } from '../api/emotions'
 import { INFERENCE_FRAME } from '../config/inference'
+import ConfidentRadar from './ui/ConfidentRadar'
 
 
 const LiveStream = () => {
@@ -43,6 +44,7 @@ const LiveStream = () => {
     headPose,
     metrics,
     pipeline,
+    entropy,
   } = useMemo(() => {
     const faceDetected = results?.status === 'success'
     return {
@@ -55,6 +57,7 @@ const LiveStream = () => {
       headPose: faceDetected ? results.geometry?.head_pose?.pose_label : null,
       metrics: results?.metrics ?? null,
       pipeline: results?.ml_pipeline ?? null,
+      entropy: faceDetected ? (results?.emotion?.entropy ?? null) : null,
     }
   }, [results])
  
@@ -344,6 +347,10 @@ const emotionAdjective = EMOTION_ADJECTIVES[emotion] ?? emotion
                     <span>{event.message}</span>
                   </div>
                 ))}
+              </div>
+
+              <div className="bg-surface-2 border border-purple-900 p-3">
+                <ConfidentRadar entropy={entropy} />
               </div>
 
             </div>

@@ -113,6 +113,7 @@ async def get_emotion_history(
                 "dominant_emotion": record.dominant_emotion,
                 "confidence"      : round(record.confidence, 4),
                 "emotion_scores"  : record.emotion_scores,
+                "entropy"         : record.entropy,
                 "timestamp"       : record.timestamp.isoformat(),
             }
             for record in records
@@ -332,6 +333,7 @@ async def get_emotion_scores(
                 "dominant_emotion": record.dominant_emotion,
                 "confidence"      : round(record.confidence, 4),
                 "emotion_scores"  : record.emotion_scores,
+                "entropy"         : record.entropy,
                 "timestamp"       : record.timestamp.isoformat(),
             }
             for record in records

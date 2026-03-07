@@ -410,6 +410,13 @@ code, pre, .mono {
   100% { left: 140%; }
 }
 
+@keyframes neuralPulse {
+  0% { transform: scale(1); opacity:0.85 }
+  50% { transform: scale(1.02); opacity:1 }
+  100% { transform: scale(1); opacity:0.85 }
+}
+
+
 .animate-scan-fast {
   animation: scan-line-horizontal 1.2s linear infinite;
 }

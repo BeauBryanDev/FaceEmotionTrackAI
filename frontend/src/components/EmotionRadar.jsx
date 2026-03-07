@@ -98,7 +98,7 @@ const EmotionRadar = ({ emotionScores }) => {
       </div>
 
       <ResponsiveContainer width="100%" height="90%">
-        <RadarChart cx="50%" cy="50%" outerRadius="65%" data={data}>
+        <RadarChart cx="50%" cy="50%" outerRadius="65%" data={data}  className="animate-[neuralPulse_3s_ease-in-out_infinite]">
 
           <defs>
             {/* Primary Energy Fill */}
@@ -132,6 +132,12 @@ const EmotionRadar = ({ emotionScores }) => {
             strokeOpacity={0.3}
             strokeDasharray="4 2"
             polarAngles={[0, 45, 90, 135, 180, 225, 270, 315]}
+          />
+          <PolarRadiusAxis
+            domain={[0, 1]}
+            tick={{ fill: '#7c3aed', fontSize: 8, fontFamily: 'Share Tech Mono' }}
+            axisLine={{ stroke: '#6b21a8', strokeOpacity: 0.2 }}
+            tickCount={4}
           />
 
           {/* LABELS */}
@@ -177,6 +183,33 @@ const EmotionRadar = ({ emotionScores }) => {
             animationDuration={400}
             animationEasing="ease-out"
           />
+
+          <Radar
+          dataKey="A"
+          stroke="#bf00ff"
+          strokeWidth={4}
+          fill="none"
+          strokeOpacity={0.15}
+          isAnimationActive={false}
+        />
+
+          <circle
+            cx="50%"
+            cy="50%"
+            r="4"
+            fill="#bf00ff"
+            opacity="0.8"
+          />
+
+          <circle
+            cx="50%"
+            cy="50%"
+            r="10"
+            stroke="#bf00ff"
+            strokeOpacity="0.3"
+            fill="none"
+          />
+
         </RadarChart>
       </ResponsiveContainer>
 
