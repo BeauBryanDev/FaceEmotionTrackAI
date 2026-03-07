@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext'
 import { getStreamUrl } from '../api/inference'
 import { INFERENCE_FRAME } from '../config/inference'
 
-
 export const useFaceTracking = () => {
   const { token } = useAuth()
 
@@ -11,6 +10,11 @@ export const useFaceTracking = () => {
   const [isConnected, setIsConnected] = useState(false)
   const [error, setError] = useState(null)
   const [videoReady, setVideoReady] = useState(false)
+  const [fps, setFps] = useState(0)
+  const [latency, setLatency] = useState(0)
+  const [throughput, setThroughput] = useState(0)
+  const [emotionScores, setEmotionScores] = useState({})
+  const [events, setEvents] = useState([])
 
   const videoRef = useRef(null)
   const wsRef = useRef(null)
@@ -21,11 +25,25 @@ export const useFaceTracking = () => {
   const latestResultRef = useRef(null)
   const hasPendingResultRef = useRef(false)
 
+  const lastPingRef = useRef(0)
+  const sentFramesRef = useRef(0)
+  const lastFpsTimeRef = useRef(performance.now())
+  const processedFramesRef = useRef(0)
+  const lastThroughputTimeRef = useRef(performance.now())
+  const latencyEmaRef = useRef(null)
+  const throughputEmaRef = useRef(null)
 
   const safeSet = useCallback((setter, value) => {
     if (!mountedRef.current) return
     setter(value)
   }, [])
+
+  const pushEvent = useCallback((message) => {
+    safeSet(setEvents, (prev) => [
+      { time: new Date().toLocaleTimeString(), message },
+      ...prev.slice(0, 20),
+    ])
+  }, [safeSet])
 
   const stopCamera = useCallback(() => {
     const video = videoRef.current
@@ -49,8 +67,6 @@ export const useFaceTracking = () => {
       safeSet(setError, null)
       safeSet(setVideoReady, false)
       waitingRef.current = false
-
-      // Always reset previous stream before requesting a new one.
       stopCamera()
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -71,12 +87,8 @@ export const useFaceTracking = () => {
       video.oncanplay = markReady
       video.onplaying = markReady
       video.srcObject = stream
-      await video.play().catch(() => {
-        // Browser autoplay constraints can reject this promise; video may still play.
-      })
-      if (video.readyState >= 2) {
-        safeSet(setVideoReady, true)
-      }
+      await video.play().catch(() => {})
+      if (video.readyState >= 2) safeSet(setVideoReady, true)
     } catch (err) {
       console.error('Camera error:', err)
       safeSet(setError, 'CAMERA ACCESS DENIED. CHECK BROWSER PERMISSIONS.')
@@ -84,25 +96,19 @@ export const useFaceTracking = () => {
   }, [safeSet, stopCamera])
 
   useEffect(() => {
-
     mountedRef.current = true
 
     return () => {
-
       mountedRef.current = false
       stopCamera()
-
       const ws = wsRef.current
-
       if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-        
         ws.close()
       }
       wsRef.current = null
     }
   }, [stopCamera])
 
-  // WebSocket connection lifecycle.
   useEffect(() => {
     if (!token) {
       safeSet(setIsConnected, false)
@@ -115,16 +121,84 @@ export const useFaceTracking = () => {
 
     ws.onopen = () => {
       if (cancelled) return
+      sentFramesRef.current = 0
+      processedFramesRef.current = 0
+      lastFpsTimeRef.current = performance.now()
+      lastThroughputTimeRef.current = performance.now()
+      latencyEmaRef.current = null
+      throughputEmaRef.current = null
+      safeSet(setFps, 0)
+      safeSet(setThroughput, 0)
+      safeSet(setLatency, 0)
+      safeSet(setEmotionScores, {})
+      safeSet(setEvents, [])
       safeSet(setIsConnected, true)
       safeSet(setError, null)
     }
 
     ws.onmessage = (event) => {
       if (cancelled) return
+
       waitingRef.current = false
+
+      const now = performance.now()
+      if (lastPingRef.current > 0) {
+        const instantLatency = now - lastPingRef.current
+        const LATENCY_ALPHA = 0.2
+        latencyEmaRef.current = latencyEmaRef.current == null
+          ? instantLatency
+          : (LATENCY_ALPHA * instantLatency) + ((1 - LATENCY_ALPHA) * latencyEmaRef.current)
+        safeSet(setLatency, Math.round(latencyEmaRef.current))
+      }
+
+      processedFramesRef.current += 1
+      const throughputElapsed = now - lastThroughputTimeRef.current
+      if (throughputElapsed >= 1000) {
+        const instantThroughput = (processedFramesRef.current * 1000) / throughputElapsed
+        const THROUGHPUT_ALPHA = 0.25
+        throughputEmaRef.current = throughputEmaRef.current == null
+          ? instantThroughput
+          : (THROUGHPUT_ALPHA * instantThroughput) + ((1 - THROUGHPUT_ALPHA) * throughputEmaRef.current)
+        safeSet(setThroughput, Math.round(throughputEmaRef.current))
+        processedFramesRef.current = 0
+        lastThroughputTimeRef.current = now
+      }
+
       try {
-        latestResultRef.current = JSON.parse(event.data)
+        const data = JSON.parse(event.data)
+        latestResultRef.current = data
         hasPendingResultRef.current = true
+
+        if (data.status === 'no_face_detected') {
+          pushEvent('No face detected')
+        }
+
+        if (data.liveness?.is_live === true) {
+          pushEvent('Liveness PASS')
+        } else if (data.liveness?.is_live === false) {
+          pushEvent('Liveness FAIL')
+        }
+
+        if (data.biometrics?.is_match === true) {
+          pushEvent('Biometric match confirmed')
+        }
+
+        if (data.emotion) {
+          let topEmotion = null
+          const emotionScoresMap = data.emotion?.emotion_scores
+          if (emotionScoresMap && typeof emotionScoresMap === 'object') {
+            const sorted = Object.entries(emotionScoresMap).sort((a, b) => b[1] - a[1])
+            topEmotion = sorted[0]?.[0] ?? null
+          } else {
+            const numericEmotionEntries = Object.entries(data.emotion).filter(([, value]) => typeof value === 'number')
+            const sorted = numericEmotionEntries.sort((a, b) => b[1] - a[1])
+            topEmotion = sorted[0]?.[0] ?? data.emotion?.dominant_emotion ?? null
+          }
+
+          if (topEmotion) {
+            pushEvent(`Emotion detected: ${topEmotion}`)
+          }
+        }
       } catch {
         safeSet(setError, 'INVALID STREAM PAYLOAD')
       }
@@ -134,6 +208,8 @@ export const useFaceTracking = () => {
       if (cancelled) return
       safeSet(setIsConnected, false)
       waitingRef.current = false
+      safeSet(setFps, 0)
+      safeSet(setThroughput, 0)
       if (event.code === 1008) {
         safeSet(setError, 'AUTHENTICATION FAILED. TOKEN INVALID OR EXPIRED.')
       }
@@ -150,24 +226,36 @@ export const useFaceTracking = () => {
         ws.close()
       }
       if (wsRef.current === ws) {
-        wsRef.current = null;
+        wsRef.current = null
       }
     }
   }, [token, safeSet])
 
-  // Throttle UI commits to reduce full component tree re-renders.
   useEffect(() => {
     const UI_COMMIT_MS = 150
     const uiTimer = setInterval(() => {
       if (!hasPendingResultRef.current) return
       hasPendingResultRef.current = false
-      safeSet(setResults, latestResultRef.current)
+      const latest = latestResultRef.current
+      safeSet(setResults, latest)
+
+      let nextScores = {}
+      const emotionPayload = latest?.emotion
+      if (emotionPayload && typeof emotionPayload === 'object') {
+        if (emotionPayload.emotion_scores && typeof emotionPayload.emotion_scores === 'object') {
+          nextScores = emotionPayload.emotion_scores
+        } else {
+          nextScores = Object.fromEntries(
+            Object.entries(emotionPayload).filter(([, value]) => typeof value === 'number')
+          )
+        }
+      }
+      safeSet(setEmotionScores, nextScores)
     }, UI_COMMIT_MS)
 
     return () => clearInterval(uiTimer)
   }, [safeSet])
 
-  // Frame capture loop.
   useEffect(() => {
     if (!isConnected || !videoReady) return
 
@@ -194,30 +282,32 @@ export const useFaceTracking = () => {
         const TARGET_WIDTH = INFERENCE_FRAME.width
         const TARGET_HEIGHT = INFERENCE_FRAME.height
 
-
         canvas.width = TARGET_WIDTH
         canvas.height = TARGET_HEIGHT
-
         ctx.drawImage(video, 0, 0, TARGET_WIDTH, TARGET_HEIGHT)
 
         encoding = true
 
         canvas.toBlob((blob) => {
-
           encoding = false
-
           if (!blob) return
-
           if (ws.readyState !== WebSocket.OPEN) return
 
           waitingRef.current = true
-
+          lastPingRef.current = performance.now()
           ws.send(blob)
 
+          sentFramesRef.current += 1
+          const now = performance.now()
+          const fpsElapsed = now - lastFpsTimeRef.current
+          if (fpsElapsed >= 1000) {
+            const currentFps = Math.round((sentFramesRef.current * 1000) / fpsElapsed)
+            safeSet(setFps, currentFps)
+            sentFramesRef.current = 0
+            lastFpsTimeRef.current = now
+          }
         }, 'image/jpeg', INFERENCE_FRAME.jpegQuality)
-
       }
-
     }, intervalMs)
 
     return () => {
@@ -225,8 +315,7 @@ export const useFaceTracking = () => {
       waitingRef.current = false
       encoding = false
     }
-
-  }, [isConnected, videoReady])
+  }, [isConnected, videoReady, safeSet])
 
   return {
     videoRef,
@@ -236,5 +325,10 @@ export const useFaceTracking = () => {
     videoReady,
     startCamera,
     stopCamera,
+    fps,
+    latency,
+    throughput,
+    emotionScores,
+    events,
   }
 }

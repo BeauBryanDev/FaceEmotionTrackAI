@@ -10,6 +10,8 @@ from app.api.dependencies import get_current_active_user
 from app.models.users import User
 from app.models.emotions import Emotion
 from app.schemas.emotion_schema import EmotionSaveRequest
+from app.services.emotion_math import compute_entropy
+
 
 
 router = APIRouter()
@@ -221,7 +223,7 @@ async def get_emotion_details(
             detail=f"Emocion invalida: '{emotion}'. "
                    f"Valores validos: {VALID_EMOTIONS}"
         )
-
+    
     # Query de agregacion: conteo y confianza promedio por clase
     # Una sola query a la DB en lugar de N queries por clase
     aggregation = (
@@ -434,14 +436,29 @@ async def save_emotion(
             detail=f"Emocion invalida: '{payload.dominant_emotion}'. "
                    f"Valores validos: {VALID_EMOTIONS}"
         )
+        
+    if payload.emotion_scores:
+        total = sum(payload.emotion_scores.values())
+        if abs(total - 1.0) > 0.05:
+                raise HTTPException(
+                status_code=400,
+                detail="Emotion probability vector must sum to 1."
+            )
 
+    emotion_probs = payload.emotion_scores or {}
+    
+    # Entropy is a measure of uncertainty
+    # It is the average of the Shannon entropy of each emotion class
+    entropy = compute_entropy(list(emotion_probs.values()))
     try:
         new_record = Emotion(
             user_id          = current_user.id,
             dominant_emotion = payload.dominant_emotion,
             confidence       = float(payload.confidence),
             emotion_scores   = payload.emotion_scores,
+            entropy          = entropy
         )
+        
         db.add(new_record)
         db.commit()
         db.refresh(new_record)
@@ -474,5 +491,56 @@ async def save_emotion(
         "confidence"      : round(new_record.confidence, 4),
         "emotion_scores"  : new_record.emotion_scores,
         "timestamp"       : new_record.timestamp.isoformat(),
+        "entropy"         : new_record.entropy,
         "message"         : "Emotion saved successfully.",
+    }
+    
+    
+# GET /api/v1/emotions/timeline
+@router.get("/timeline", status_code=status.HTTP_200_OK)
+async def get_emotion_timeline(
+    limit: int = Query(default=100, ge=10, le=1000),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns chronological emotion detections for time-series visualization.
+
+    Intended for:
+    - emotion trend line charts
+    - mood evolution analysis
+    - temporal AI dashboards
+    """
+
+    records = (
+        db.query(Emotion)
+        .filter(Emotion.user_id == current_user.id)
+        .order_by(Emotion.timestamp.asc())
+        .limit(limit)
+        .all()
+    )
+
+    if not records:
+        return {
+            "user_id": current_user.id,
+            "count": 0,
+            "timeline": []
+        }
+
+    timeline = [
+        {
+            "timestamp": r.timestamp.isoformat(),
+            "emotion": r.dominant_emotion,
+            "confidence": round(r.confidence, 4),
+            "emotion_scores": r.emotion_scores,
+            "entropy": r.entropy
+        }
+        for r in records
+    ]
+
+    return {
+        "user_id": current_user.id,
+        "count": len(timeline),
+        "timeline": timeline
+        
     }

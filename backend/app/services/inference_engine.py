@@ -5,6 +5,7 @@ import time
 import os
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.services.emotion_math import compute_entropy
 
 
 logger = get_logger(__name__)
@@ -377,10 +378,13 @@ class InferenceEngine:
         # TODO , it has to be changed, I need to return all emotions scores, all of them , I want all of them for debuging purposes.  ||  None . If None, it will be stored as null in PostgreSQL, if dict, it will be stored as JSONB.
         max_index = int(np.argmax(probabilities))
         
+        entropy = compute_entropy(probabilities)
+        
         result = dict(
             dominant_emotion = emotion_classes[max_index],
             confidence = float(probabilities[max_index]),
-            emotion_scores = dict(zip(emotion_classes, probabilities.tolist()))
+            emotion_scores = dict(zip(emotion_classes, probabilities.tolist())),
+            entropy = entropy
         )
         
         logger.info(

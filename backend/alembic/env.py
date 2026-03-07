@@ -12,6 +12,7 @@ from app.core.database import Base
 
 from app.models.users import User 
 from app.models.emotions import Emotion
+from app.models.face_session import FaceSessionEmbedding  
 
 config = context.config
 

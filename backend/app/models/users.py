@@ -18,6 +18,7 @@ class User(Base):
     phone_number = Column(String, nullable=True)
     gender = Column(String, nullable=True)
     age = Column(Integer, nullable=True)
+    country = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False, nullable=False)
     # Biometric Master Embedding

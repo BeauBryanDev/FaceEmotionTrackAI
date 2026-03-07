@@ -32,3 +32,10 @@ class Emotion(Base):
 
     # Relationship linking back to the User model
     user = relationship("User", back_populates="emotions")
+    
+    #Entropy 
+    entropy = Column(Float, nullable=True)
+    
+
+    def __repr__(self):
+        return f"<Emotion(id={self.id}, user_id={self.user_id}, dominant_emotion={self.dominant_emotion}, confidence={self.confidence}, emotion_scores={self.emotion_scores}, timestamp={self.timestamp})>"

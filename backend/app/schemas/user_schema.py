@@ -15,6 +15,7 @@ class UserBase(BaseModel):
         description="Número de teléfono en formato E.164 (ej. +1234567890)"
     )
     gender: Optional[str] = Field(None, pattern=r'^[MF]$', description="Género del usuario")
+    country: Optional[str] = Field(None, max_length=100, description="País de residencia del usuario")
 
 class UserCreate(UserBase):
     """

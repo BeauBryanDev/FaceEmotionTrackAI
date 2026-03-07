@@ -26,6 +26,12 @@ class EmotionBase(BaseModel):
         max_length=500, 
         description="Optional contextual note provided by the user"
     )
+    
+    entropy: Optional[float] = Field(
+        None,
+        ge=0.0,
+        description="Entropy of the emotion probability distribution, indicating uncertainty"
+    )
 
 class EmotionCreate(BaseModel):
     """

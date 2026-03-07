@@ -82,7 +82,14 @@ async def websocket_endpoint(
                 continue
             
             metrics = {}
-     
+            
+            ml_pipeline = {
+                "face_detected": False,
+                "liveness": "NOT_RUN",
+                "biometric_match": "NOT_RUN",
+                "emotion": "NOT_RUN"
+            }
+
             # Cheap motion detection
             gray_small = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             gray_small = cv2.resize(gray_small, (160, 120))
@@ -93,7 +100,12 @@ async def websocket_endpoint(
                 motion_score = np.mean(frame_diff)
 
                 if motion_score < MOTION_THRESHOLD:
-                    # skip heavy ML pipeline
+                    # IMPORTANT: always answer to release frontend "waiting" state.
+                    # If we just continue here, the client can deadlock after one frame.
+                    await websocket.send_json({
+                        "status": "skipped_low_motion",
+                        "metrics": {"motion_score": float(motion_score)}
+                    })
                     continue
 
             previous_gray = gray_small
@@ -113,7 +125,8 @@ async def websocket_endpoint(
                 # Always respond on the same socket that sent this frame.
                 await websocket.send_json({"status": "no_face_detected"})
                 continue
-
+            
+            ml_pipeline["face_detected"] = True
             metrics["face_detection_ms"] = round((time.perf_counter() - start) * 1000, 2)
             
             primary_face = faces[0]
@@ -167,16 +180,24 @@ async def websocket_endpoint(
             # Second layer: geometric liveness via EAR.
             #   - Real faces:     EAR > 0.12 (eyes have depth and structure)
             #   - Printed photos: EAR ~ 0.00 (flat surface, no ocular geometry)
+            # add texture variance to liveness score to catch low-res prints/screens
             # Note: bool() cast required - numpy.bool_ is not JSON serializable.
             #is_live = bool(liveness_score > 0.65 and ear_value > 0.125 and texture_variance > 70 )
             metrics["liveness_ms"] = round((time.perf_counter() - start) * 1000, 2)
             #print(f"Liveness | Model: {liveness_score:.4f} | EAR: {ear_value:.4f} | Final: {is_live}")
 
             is_live = bool( liveness_score > 0.65 and ear_value > 0.125 )  
-
-            print(f"Liveness Check | Model: {liveness_score:.4f} | Texture: {texture_variance:.2f} | EAR : {ear_value:.4f} | Final: {is_live}")
-    
+            logger.debug(
+                "Liveness check | model=%.4f texture=%.2f ear=%.4f final=%s",
+                liveness_score,
+                texture_variance,
+                ear_value,
+                is_live,
+            )
+            ml_pipeline["liveness"] = "LIVE" if is_live else "SPOOF"
+            
             response_data = {
+                
                 "status": "success",
                 "bbox": bbox,
                 "liveness": {
@@ -199,7 +220,7 @@ async def websocket_endpoint(
                 if user.face_embedding is not None:
                     stored_vector = np.array(user.face_embedding, dtype=np.float32)
                     
-                    
+                    start = time.perf_counter()
                     live_vector = await run_in_threadpool(
                         inference_engine.get_face_embedding,
                         aligned_face
@@ -213,10 +234,11 @@ async def websocket_endpoint(
                         "is_match": is_match,
                         "similarity_score": float(similarity)
                     }
+                    ml_pipeline["biometric_match"] = "MATCH" if is_match else "NO_MATCH"
                 else:
                     
                     response_data["biometrics"] = {"message": "No biometric template found"}
-
+                    ml_pipeline["biometric_match"] = "NOT_AVAILABLE"
                 
                 start = time.perf_counter()
                 
@@ -225,11 +247,14 @@ async def websocket_endpoint(
                 
                 metrics["emotion_ms"] = round((time.perf_counter() - start) * 1000, 2)
                 
+                ml_pipeline["emotion"] = emotion_result["dominant_emotion"]
+                
                 response_data["emotion"] = emotion_result
                 
             
             response_data["geometry"] = geometry_data
             response_data["metrics"] = metrics
+            response_data["ml_pipeline"] = ml_pipeline
 
             
             # Keep request/response on the same websocket connection to avoid
@@ -241,10 +266,8 @@ async def websocket_endpoint(
         manager.disconnect(user.id)
         
     except Exception as e:
-        
-        print(f"Error en el stream del usuario {user.id}: {str(e)}")
+        logger.exception("Error in user %s stream: %s", user.id, str(e))
         
         manager.disconnect(user.id)
-
 
 
