@@ -98,6 +98,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: '/pcaanalytics',
+    label: 'PCA ANALYTICS',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M4 20V8" />
+        <path d="M10 20V4" />
+        <path d="M16 20v-6" />
+        <path d="M22 20v-10" />
+      </svg>
+    ),
+  },
+  {
     path: '/profile',
     label: 'OPERATOR PROFILE',
     icon: (

@@ -16,6 +16,7 @@ const PAGE_TITLES = {
   '/analytics':{ title: 'ANALYTICS',     sub: 'PCA EMBEDDING SPACE' },
   '/report':    { title: 'EMOTION REPORT', sub: 'OPERATIONAL EMOTION INTELLIGENCE' },
   '/russelquadrants': { title: 'EMOTION ANALYSIS', sub: 'RUSSELL CIRCUMPLEX MODEL' },
+  '/pcaanalytics': { title: 'PCA ANALYTICS', sub: 'EMBEDDING SPACE VISUALIZATION' },
   '/profile':   { title: 'OPERATOR',      sub: 'IDENTITY & BIOMETRIC PROFILE' },
 }
 

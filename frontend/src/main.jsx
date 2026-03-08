@@ -4,7 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { BiometricsProvider } from './context/Biometrics'
 import App from './App'
-import './index.css'
+import  './styles/index.css'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

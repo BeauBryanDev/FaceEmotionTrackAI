@@ -17,6 +17,7 @@ import Inference from './pages/Inference'
 import Analytics from './pages/Analytics'
 import EmotionReport from './pages/EmotionReport'
 import EmotionsAnalysis from './pages/EmotionsAnalysis'
+import PCAAnalytics from './pages/PCAAnalytics'
 
 
 // PROTECTED ROUTE
@@ -126,6 +127,7 @@ const App = () => (
       <Route path="/analytics" element={<Analytics />} />
       <Route path="/report" element={<EmotionReport />} />
       <Route path="/russelquadrants" element={<EmotionsAnalysis />} />
+      <Route path="/pcaanalytics" element={<PCAAnalytics />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/about" element={<Home />} />
     </Route>
