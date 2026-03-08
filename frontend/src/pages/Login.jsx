@@ -31,7 +31,7 @@ const Login = () => {
       setTimeout(() => setPhase('AUTHENTICATING'), 600)
       await login(form.email, form.password)
       setPhase('SUCCESS')
-      setTimeout(() => navigate('/dashboard'), 500)
+      setTimeout(() => navigate('/about'), 500)
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(detail || 'AUTHENTICATION FAILED')

@@ -119,7 +119,7 @@ const Register = () => {
       await login(form.email.trim(), form.password)
 
       setPhase('SUCCESS')
-      setTimeout(() => navigate('/dashboard'), 500)
+      setTimeout(() => navigate('/about'), 500)
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(detail || 'REGISTRATION FAILED')
@@ -392,4 +392,3 @@ const Register = () => {
 }
 
 export default Register
-

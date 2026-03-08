@@ -14,6 +14,8 @@ import { computeEmotionDynamics } from "../utils/emotionDynamics"
 
 import { getEmotionScores } from "../api/emotions"
 
+import EmotionalIntelligencePanel from "../components/ui/EmotionalIntelligencePanel"
+
 /*
 Emotion Analysis (Russell Model)
 
@@ -93,6 +95,8 @@ const EmotionsAnalysis = () => {
     <EmotionPhaseSpace dynamics={dynamics}/>
 
     <EmotionVectorField dynamics={dynamics}/>
+
+    <EmotionalIntelligencePanel data={points} current={current} />
 
   </div>
 

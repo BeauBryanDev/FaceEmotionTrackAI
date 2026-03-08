@@ -10,6 +10,17 @@ import Footer from '../components/common/Footer'
 // -----------------------------------------------------------------------------
 const NAV_ITEMS = [
   {
+    path: '/about',
+    label: 'ABOUT SYSTEM',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+      </svg>
+    ),
+  },
+  {
     path: '/dashboard',
     label: 'LIVE STREAM',
     icon: (
@@ -93,17 +104,6 @@ const NAV_ITEMS = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <circle cx="12" cy="8" r="4" />
         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-      </svg>
-    ),
-  },
-  {
-    path: '/about',
-    label: 'ABOUT SYSTEM',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="16" x2="12" y2="12" />
-        <line x1="12" y1="8" x2="12.01" y2="8" />
       </svg>
     ),
   },

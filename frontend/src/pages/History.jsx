@@ -125,6 +125,7 @@ const History = () => {
                   <th className="p-4">TIMESTAMP_UTC</th>
                   <th className="p-4">DOMINANT_STATE</th>
                   <th className="p-4 w-1/3">MODEL_CONFIDENCE</th>
+                  <th className="p-4">ENTROPY</th>
                 </tr>
               </thead>
               <tbody className="font-mono text-sm text-purple-100">
@@ -149,6 +150,13 @@ const History = () => {
                           ></div>
                         </div>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-purple-300 text-xs">
+                        {record.entropy !== null && record.entropy !== undefined
+                          ? Number(record.entropy).toFixed(3)
+                          : '--'}
+                      </span>
                     </td>
                   </tr>
                 ))}
