@@ -113,7 +113,6 @@ async def get_emotion_history(
                 "dominant_emotion": record.dominant_emotion,
                 "confidence"      : round(record.confidence, 4),
                 "emotion_scores"  : record.emotion_scores,
-                "entropy"         : record.entropy,
                 "timestamp"       : record.timestamp.isoformat(),
             }
             for record in records
@@ -194,6 +193,7 @@ async def get_emotion_summary(
         "total_detections": total_detections,
         "dominant_emotion": dominant_emotion,
         "emotion_stats"   : emotion_stats,
+            
     }
 
 
@@ -333,8 +333,8 @@ async def get_emotion_scores(
                 "dominant_emotion": record.dominant_emotion,
                 "confidence"      : round(record.confidence, 4),
                 "emotion_scores"  : record.emotion_scores,
-                "entropy"         : record.entropy,
                 "timestamp"       : record.timestamp.isoformat(),
+                "entropy"         : record.entropy,
             }
             for record in records
         ]
@@ -439,25 +439,35 @@ async def save_emotion(
                    f"Valores validos: {VALID_EMOTIONS}"
         )
         
+    normalized_scores = None
     if payload.emotion_scores:
-        total = sum(payload.emotion_scores.values())
+        # Normalize to plain python floats before validation/persistence.
+        normalized_scores = {
+            key: float(value) for key, value in payload.emotion_scores.items()
+        }
+        total = sum(normalized_scores.values())
         if abs(total - 1.0) > 0.05:
                 raise HTTPException(
                 status_code=400,
                 detail="Emotion probability vector must sum to 1."
             )
 
-    emotion_probs = payload.emotion_scores or {}
+    emotion_probs = normalized_scores or {}
     
     # Entropy is a measure of uncertainty
-    # It is the average of the Shannon entropy of each emotion class
-    entropy = compute_entropy(list(emotion_probs.values()))
+    # Shannon entropy of the probability vector.
+    entropy = (
+        compute_entropy(list(emotion_probs.values()))
+        if emotion_probs
+        else (float(payload.entropy) if payload.entropy is not None else None)
+    )
+
     try:
         new_record = Emotion(
             user_id          = current_user.id,
             dominant_emotion = payload.dominant_emotion,
             confidence       = float(payload.confidence),
-            emotion_scores   = payload.emotion_scores,
+            emotion_scores   = normalized_scores,
             entropy          = entropy
         )
         
@@ -469,6 +479,7 @@ async def save_emotion(
             f"Emotion saved manually by user. "
             f"emotion={new_record.dominant_emotion} "
             f"confidence={new_record.confidence:.4f} "
+            f"entropy={new_record.entropy} "
             f"id={new_record.id}",
             extra={"user_id": current_user.id}
         )
@@ -514,13 +525,15 @@ async def get_emotion_timeline(
     - temporal AI dashboards
     """
 
+    # Fetch newest N first, then restore chronological order for chart rendering.
     records = (
         db.query(Emotion)
         .filter(Emotion.user_id == current_user.id)
-        .order_by(Emotion.timestamp.asc())
+        .order_by(Emotion.timestamp.desc())
         .limit(limit)
         .all()
     )
+    records = list(reversed(records))
 
     if not records:
         return {

@@ -90,6 +90,7 @@ const LiveStream = () => {
         dominant_emotion: results.emotion.dominant_emotion,
         confidence: results.emotion.confidence,
         emotion_scores: results.emotion.emotion_scores ?? null,
+        entropy: results.emotion.entropy ?? null,
       })
       setSaveStatus('SAVED')
       setTimeout(() => setSaveStatus('IDLE'), 2000)

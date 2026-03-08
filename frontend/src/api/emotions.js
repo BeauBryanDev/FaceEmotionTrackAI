@@ -37,6 +37,12 @@ export const getEmotionScoresChart = async () => {
   const response = await api.get('/emotions/scores/chart')
   return response.data
 }
+
+export const getEmotionTimeline = async (limit = 100) => {
+  const response = await api.get('/emotions/timeline', { params: { limit } })
+  return response.data
+}
+
 /**
  * Saves the current emotion inference result to the database.
  * Called explicitly when the user clicks "SAVE EMOTION" in LiveStream.

@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { getEmotionSummary, getEmotionScores, getEmotionHistory, getEmotionDetails, getEmotionScoresChart } from '../api/emotions'
+import { getEmotionSummary, getEmotionScores, getEmotionHistory, getEmotionDetails, getEmotionScoresChart, getEmotionTimeline } from '../api/emotions'
 import Text from '../components/ui/Text'
 import EmotionRadar from '../components/EmotionRadar'
 import EmotionDistributionPie from '../components/EmotionDistributionPie'
 import SentimentDoughnut from '../components/SentimentDoughnut'
 import EmotionHistoryHistogram from '../components/EmotionHistoryHistogram'
 import ConfidenceRadar from '../components/ui/ConfidentRadar'
+import EmotionTimeline from '../components/EmotionTimeline'
+import NeuralStabilityMeter from '../components/NeuralStabilityMeter'
 
 
 
 const Emotions = () => {
   const [summary, setSummary] = useState(null)
   const [scores, setScores] = useState(null)
-  const [chart, setChart] = useState(null)
+  const [timeline, setTimeline] = useState([])
   const [recent, setRecent] = useState([])
   const [details, setDetails] = useState(null)
   const [selectedEmotion, setSelectedEmotion] = useState('Happiness')
@@ -34,19 +36,20 @@ const Emotions = () => {
       try {
         setLoading(true)
         setError(null)
-        const [summaryData, scoreData, historyData, chartData, detailsData] = await Promise.all([
+        const [summaryData, scoreData, historyData, _chartData, detailsData, timelineData] = await Promise.all([
           getEmotionSummary(),
           getEmotionScores(1),
-          getEmotionHistory({ page: 1, page_size: 10 }),
+          getEmotionHistory({ page: 1, page_size: 7 }),
           getEmotionScoresChart(),
           getEmotionDetails(selectedEmotion),
+          getEmotionTimeline(200),
         ])
         setSummary(summaryData)
         setScores(scoreData?.records?.[0]?.emotion_scores || null)
         setEntropy(scoreData?.records?.[0]?.entropy ?? null)
         setRecent(historyData?.records || [])
-        setChart(chartData)
         setDetails(detailsData)
+        setTimeline(timelineData?.timeline || [])
       } catch (e) {
         setError('FAILED TO LOAD EMOTION DATA')
       } finally {
@@ -55,6 +58,7 @@ const Emotions = () => {
     }
     run()
   }, [selectedEmotion])
+
 
   if (loading) {
     return (
@@ -138,8 +142,8 @@ const Emotions = () => {
           </div>
 
           {/* SENTIMENT DOUGHNUT */}
-          <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative">
-            <div className="p-4 flex flex-col h-[220px]">
+          <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative overflow-hidden">
+            <div className="p-4 flex flex-col h-[320px]">
               <Text variant="subtext" className="text-[10px] text-purple-400 mb-2">02 // SENTIMENT_INDEX</Text>
               <div className="flex-1">
                 <SentimentDoughnut stats={summary?.emotion_stats} />
@@ -193,6 +197,13 @@ const Emotions = () => {
               </div>
             </div>
           </div>
+          {/* NEURAL STABILITY METER */}
+          <NeuralStabilityMeter entropy={entropy} />
+          <div className="flex justify-between mt-2 text-[9px] font-mono text-purple-500">
+          <span>DOMINANT_SIGNAL_TRACK</span>
+          <span>AI_EMOTION_CLASSIFIER</span>
+        </div>
+
         </div>
 
         {/* COLUMN 3: RECENT LOG & READOUTS */}
@@ -227,7 +238,7 @@ const Emotions = () => {
             <Text variant="subtext" className="text-[10px] text-purple-400 mb-4 uppercase">06 // EVENT_LOG</Text>
             <div className="flex-1 overflow-y-auto scrollbar-cyber pr-2">
               <div className="space-y-2">
-                {recent.map((r) => (
+                {recent.slice(0, 7).map((r) => (
                   <div key={r.id} className="flex flex-col gap-1 p-2 bg-purple-950/40 border-l border-purple-800 hover:border-neon-purple transition-all group">
                     <div className="flex justify-between items-center px-1">
                       <span className="font-mono text-[8px] text-purple-600">ID: {String(r.id).padStart(4, '0')}</span>
@@ -250,6 +261,10 @@ const Emotions = () => {
         </div>
 
       </div>
+      {/* TIMELINE */}
+          <div className="mt-6">
+            <EmotionTimeline data={timeline} />
+          </div>
 
       {/* FOOTER SYSTEM METRICS */}
       <div className="mt-4 flex items-center justify-between text-[8px] font-mono text-purple-600 tracking-widest border-t border-purple-800/30 pt-4">

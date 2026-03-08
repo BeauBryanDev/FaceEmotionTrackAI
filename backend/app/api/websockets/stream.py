@@ -52,6 +52,9 @@ async def websocket_endpoint(
             # Receive frame from frontend.
             # Supports both binary JPEG frames and legacy JSON/base64 payloads.
             ws_message = await websocket.receive()
+            if ws_message.get("type") == "websocket.disconnect":
+                break
+
             raw_bytes = ws_message.get("bytes")
 
             if raw_bytes is not None:
@@ -262,12 +265,15 @@ async def websocket_endpoint(
             await websocket.send_json(response_data)
 
     except WebSocketDisconnect:
-        
-        manager.disconnect(user.id)
-        
+        pass
+    except RuntimeError as e:
+        # Starlette can raise this when disconnect was already consumed.
+        if "disconnect message" in str(e):
+            pass
+        else:
+            logger.exception("Runtime error in user %s stream: %s", user.id, str(e))
     except Exception as e:
         logger.exception("Error in user %s stream: %s", user.id, str(e))
-        
+    finally:
         manager.disconnect(user.id)
-
 
