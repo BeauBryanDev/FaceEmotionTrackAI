@@ -1,5 +1,6 @@
+from statistics import variance
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Dict, Any
 
 def compute_cosine_similarity(vector1: np.ndarray, vector2: np.ndarray) -> float:
     """
@@ -66,7 +67,16 @@ def apply_pca_reduction(embeddings: np.ndarray, n_components: int = 128) -> np.n
         n_components (int): The target number of dimensions (e.g., reducing 512 to 128).
         
     Returns:
-        np.ndarray: The dimensionality-reduced embeddings.
+        
+        Dict[str, Any]:
+            {
+                "reduced_embeddings": np.ndarray,
+                "principal_components": np.ndarray,
+                "explained_variance": np.ndarray,
+                "explained_variance_ratio": np.ndarray,
+                "cumulative_variance": np.ndarray,
+                "mean_vector": np.ndarray
+            }
         
     """
     
@@ -78,54 +88,87 @@ def apply_pca_reduction(embeddings: np.ndarray, n_components: int = 128) -> np.n
     
     if embeddings.shape[1] <= n_components:
         return embeddings
+    
+    
+    n_samples, n_features = embeddings.shape
 
-    # i : Mean centering the data
+    if n_features <= n_components:
+        return {
+            "reduced_embeddings": embeddings,
+            "principal_components": None,
+            "explained_variance": None,
+            "explained_variance_ratio": None,
+            "cumulative_variance": None,
+            "mean_vector": None
+        }
+
+    # 1. Mean center data
     mean_vector = np.mean(embeddings, axis=0)
     centered_data = embeddings - mean_vector
-    
-    max_components = min(embeddings.shape[0], embeddings.shape[1])
-    n_components   = min(n_components, max_components)
-    
-    # ii : Singular Value Decomposition (SVD)
-    # X = U * S * V^T
-    # We use full_matrices=False for computational efficiency on large datasets.
+
+    # limit components safely
+    max_components = min(n_samples, n_features)
+    n_components = min(n_components, max_components)
+
+    # 2. SVD
     U, S, Vt = np.linalg.svd(centered_data, full_matrices=False)
-    #Getting the EigenVector, these get the most co Varaicne of Human Faces image frame
-    # iii : Projection onto the principal components
-    # We take the top 'n_components' from the transposed right singular vectors (Vt)
-    principal_components = Vt.T[:, :n_components]
-    reduced_data = np.dot(centered_data, principal_components)
-    
-    return reduced_data
 
+    # 3. principal components
+    principal_components = Vt[:n_components]
+
+    # 4. projection
+    reduced_data = np.dot(centered_data, principal_components.T)
+
+    # 5. variance computation
+    explained_variance = (S ** 2) / (n_samples - 1)
+
+    # keep only selected components
+    explained_variance = explained_variance[:n_components]
+
+    total_variance = np.sum((S ** 2) / (n_samples - 1))
+    # X = U * S * V^T
+    explained_variance_ratio = explained_variance / total_variance
+    # We use full_matrices=False for computational efficiency on large datasets.
+    cumulative_variance = np.cumsum(explained_variance_ratio)
+
+    return {
+        "reduced_embeddings": reduced_data,
+        "principal_components": principal_components,
+        "explained_variance": explained_variance,
+        "explained_variance_ratio": explained_variance_ratio,
+        "cumulative_variance": cumulative_variance,
+        "mean_vector": mean_vector
+    }
+
+    
 def apply_pca_reduction_batch(
-    embeddings: List[np.ndarray], n_components: int = 128
-) -> List[np.ndarray]:
+    embeddings: List[np.ndarray],
+    n_components: int = 128
+) -> List[Dict[str, Any]]:
     """
-    Reduces the dimensionality of a batch of embeddings using PCA via SVD.
-    
-    This is an advanced technique useful for optimizing vector storage or 
-    preparing 512D data for 2D/3D visualization (e.g., t-SNE clustering).
-    Implemented strictly with NumPy to demonstrate foundational linear algebra skills.
-    
-    Args:
-        embeddings (List[np.ndarray]): A list of 2D arrays of shape (n_samples, n_features).
-        n_components (int): The target number of dimensions (e.g., reducing 512 to 128).
-        
-    Returns:
-        List[np.ndarray]: The dimensionality-reduced embeddings.
-    """
-    # Apply PCA reduction to each embedding in the batch
-    reduced_embeddings = [
-        apply_pca_reduction(embedding, n_components) for embedding in embeddings
-    ]
-    
-    return reduced_embeddings   
+    Applies PCA reduction to multiple embedding datasets.
 
-    # TODO :  CHECK THIS FIXTURE  to apply_pca_reductions_batch method :
+    Each element must be a matrix (n_samples, n_features).
+
+    Args:
+        embeddings: list of embedding matrices
+        n_components: target PCA dimensions
+
+    Returns:
+        List of PCA result dictionaries
     """
-    return [
-        apply_pca_reduction(matrix, n_components)
-        for matrix in embeddings  # cada elemento debe ser (n_samples, n_features)
-    ]
-    """
+
+    results = []
+
+    for matrix in embeddings:
+
+        if matrix.ndim != 2:
+            raise ValueError(
+                f"Each embedding batch must be (n_samples, n_features). Got {matrix.shape}"
+            )
+
+        pca_result = apply_pca_reduction(matrix, n_components)
+
+        results.append(pca_result)
+
+    return results
