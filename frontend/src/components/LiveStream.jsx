@@ -5,6 +5,7 @@ import EmotionRadar from './EmotionRadar';
 import { saveEmotion } from '../api/emotions'
 import { INFERENCE_FRAME } from '../config/inference'
 import ConfidentRadar from './ui/ConfidentRadar'
+import StreamMetricsHUD from './StreamMetricsHUD'
 
 
 const LiveStream = () => {
@@ -361,6 +362,7 @@ const emotionAdjective = EMOTION_ADJECTIVES[emotion] ?? emotion
 
       {/* RIGHT PANEL TELE MESSURES */}
       <div className="w-full lg:w-96 flex flex-col gap-4">
+        <StreamMetricsHUD data={results} />
         
         {/* BLOCK 1 FOREMOST EMOTION */}
         <div className="bg-surface-1 border border-purple-800 p-4 shadow-[inset_0_0_20px_rgba(74,0,128,0.15)] relative overflow-hidden">
