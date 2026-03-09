@@ -4,6 +4,11 @@ AI-powered face emotion and biometric tracking system. The backend is a FastAPI 
 
 This README reflects a full code review of `backend/` including `app/`, Alembic migrations, tests, and `ml_weights/`.
 
+<p align="center">
+  <img src="./frontend/src/assets/emotitrackincon.jpg" alt="Web App Main Icon" width="200">
+</p>
+
+
 ## Highlights
 - **ML pipeline**: SCRFD (face detection + 5 landmarks), MiniFASNetV2 (liveness), ArcFace (512D embeddings), EmotiEffLib EfficientNet-B0 (emotion).
 - **Real-time streaming** via WebSocket `/ws/stream` with per-frame analysis.

@@ -243,6 +243,9 @@ db_test_script.py
 *.jpeg
 *.png
 
+#Exception :  allow the web app main icon to be push to github
+!frontend/src/assets/emotitrackicon.jpg
+
 #Ingnore emotions images folder
 faceEmotions/
 
