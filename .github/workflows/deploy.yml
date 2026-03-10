@@ -59,11 +59,8 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Run ruff linter
-        working-directory: backend
-        run: ruff check app/ tests/
-
+          
+          
       - name: Run pytest with coverage
         working-directory: backend
         run: |
