@@ -62,6 +62,10 @@ class UserUpdate(BaseModel):
         pattern=r'^\+?[1-9]\d{1,14}$', 
         description="New phone number for the user. Leave blank to keep the current phone number."
     )
+
+    age: Optional[int] = Field(None, ge=13, le=120)
+    gender: Optional[str] = Field(None, pattern=r'^[MF]$')
+    country: Optional[str] = Field(None, max_length=100)
     
     class Config:
         """

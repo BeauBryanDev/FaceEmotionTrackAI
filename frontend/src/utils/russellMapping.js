@@ -20,6 +20,25 @@ const EMOTION_ORDER = [
   'Surprise',
 ]
 
+/**
+ * Tactical Russell Quadrants
+ */
+export const RUSSELL_QUADRANTS = {
+  Q1: { label: 'ALARM_PHASE', color: '#ff4466', description: 'High Arousal / Negative Valence' },
+  Q2: { label: 'STRIKE_READY', color: '#00ff88', description: 'High Arousal / Positive Valence' },
+  Q3: { label: 'TACTICAL_RECOVERY', color: '#4488ff', description: 'Low Arousal / Positive Valence' },
+  Q4: { label: 'DORMANCY_STATE', color: '#ff8800', description: 'Low Arousal / Negative Valence' },
+  CENTER: { label: 'NEUTRAL_AXIS', color: '#cccccc', description: 'Equilibrium' },
+}
+
+export const getQuadrant = (valence, arousal) => {
+  if (Math.abs(valence) < 0.1 && Math.abs(arousal) < 0.1) return RUSSELL_QUADRANTS.CENTER
+  if (valence >= 0 && arousal >= 0) return RUSSELL_QUADRANTS.Q2
+  if (valence < 0 && arousal >= 0) return RUSSELL_QUADRANTS.Q1
+  if (valence < 0 && arousal < 0) return RUSSELL_QUADRANTS.Q4
+  return RUSSELL_QUADRANTS.Q3
+}
+
 export const calculateRussellCoordinates = (probabilities = []) => {
   if (!Array.isArray(probabilities) || probabilities.length === 0) {
     return { valence: 0, arousal: 0 }

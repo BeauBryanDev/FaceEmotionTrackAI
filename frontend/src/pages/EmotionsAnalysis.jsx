@@ -8,8 +8,9 @@ import EmotionDrift from "../components/EmotionDrift"
 import EmotionTurbulence from "../components/EmotionTurbulence"
 import EmotionPhaseSpace from "../components/EmotionPhaseSpace"
 import EmotionVectorField from "../components/EmotionVectorField"
+import EmotionTimeline from "../components/EmotionTimeline"
 
-import { calculateRussellCoordinates } from "../utils/russellMapping"
+import { calculateRussellCoordinates, getQuadrant } from "../utils/russellMapping"
 import { computeEmotionDynamics } from "../utils/emotionDynamics"
 
 import { getEmotionScores } from "../api/emotions"
@@ -28,24 +29,25 @@ Emotion Analysis (Russell Model)
 
 const EmotionsAnalysis = () => {
 
-  const [points,setPoints] = useState([])
+  const [points, setPoints] = useState([])
 
-  useEffect(()=>{
+  useEffect(() => {
 
-    async function load()
-    {
+    async function load() {
       const data = await getEmotionScores()
 
-      const coords = data.records.map((r,i)=>{
+      const coords = data.records.map((r, i) => {
 
         const p = Object.values(r.emotion_scores)
 
-        const {valence,arousal} = calculateRussellCoordinates(p)
+        const { valence, arousal } = calculateRussellCoordinates(p)
 
         return {
           valence,
           arousal,
-          time:i
+          entropy: r.entropy,
+          dominant_emotion: r.dominant_emotion,
+          time: i
         }
       })
 
@@ -54,51 +56,63 @@ const EmotionsAnalysis = () => {
 
     load()
 
-  },[])
+  }, [])
 
-  const current = points[points.length-1] || {valence:0,arousal:0}
+  const current = points[points.length - 1] || { valence: 0, arousal: 0 }
 
   const dynamics = computeEmotionDynamics(points)
-
+  const tacticalState = getQuadrant(current.valence, current.arousal)
 
   return (
+    <div className="p-6 space-y-6 bg-surface-0 bg-cyber-grid min-h-[calc(100vh-80px)]">
 
-  <div className="p-6 space-y-6">
+      <div className="flex justify-between items-end border-b border-purple-800 pb-4">
+        <div>
+          <h1 className="text-xl text-purple-200 font-bold tracking-[0.2em] flex items-center gap-2">
+            NEURAL_AFFECT_CORE // V4.0
+          </h1>
+          <p className="font-mono text-[9px] text-purple-500 mt-1 uppercase tracking-widest">
+            Tactical Emotional Analysis (Circumplex Model)
+          </p>
+        </div>
+        <div className="bg-purple-950 border border-neon-purple/50 px-4 py-1 text-center">
+          <span className="block text-[7px] text-purple-400 font-mono tracking-tighter uppercase">Current Tactical State</span>
+          <span className="text-neon-purple font-mono font-black text-sm glow-sm uppercase">
+            {tacticalState.label}
+          </span>
+        </div>
+      </div>
 
-    <h1 className="text-xl text-purple-300">
-      Emotion Analysis (Russell Model)
-    </h1>
+      <RussellCircumplexChart data={points} />
 
-    <RussellCircumplexChart data={points}/>
+      <div className="grid grid-cols-2 gap-4">
 
-    <div className="grid grid-cols-2 gap-4">
+        <EmotionIntensityMeter
+          valence={current.valence}
+          arousal={current.arousal}
+        />
 
-      <EmotionIntensityMeter
-        valence={current.valence}
-        arousal={current.arousal}
-      />
+        <RussellQuadrants data={points} />
 
-      <RussellQuadrants data={points}/>
+      </div>
+
+      <EmotionalTrajectory data={points} />
+
+      <div className="grid grid-cols-3 gap-4">
+
+        <EmotionMomentum dynamics={dynamics} />
+        <EmotionDrift dynamics={dynamics} />
+        <EmotionTurbulence data={points} />
+
+      </div>
+
+      <EmotionPhaseSpace dynamics={dynamics} />
+
+      <EmotionVectorField dynamics={dynamics} />
+
+      <EmotionalIntelligencePanel data={points} current={current} />
 
     </div>
-
-    <EmotionalTrajectory data={points}/>
-
-    <div className="grid grid-cols-3 gap-4">
-
-        <EmotionMomentum dynamics={dynamics}/>
-        <EmotionDrift dynamics={dynamics}/>
-        <EmotionTurbulence data={points}/>
-
-    </div>
-
-    <EmotionPhaseSpace dynamics={dynamics}/>
-
-    <EmotionVectorField dynamics={dynamics}/>
-
-    <EmotionalIntelligencePanel data={points} current={current} />
-
-  </div>
 
   )
 }

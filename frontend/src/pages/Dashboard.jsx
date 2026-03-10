@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Activity, Cpu, Database, Terminal, Zap, RefreshCw, User, Shield } from 'lucide-react'
 import { getEmotionSummary } from '../api/emotions'
 import { useAuth } from '../context/AuthContext'
+import MainIcon from '../assets/emotitrackincon.jpg'
 
 // -----------------------------------------------------------------------------
 // EMOTION COLOR MAP
@@ -10,13 +11,13 @@ import { useAuth } from '../context/AuthContext'
 // -----------------------------------------------------------------------------
 const EMOTION_COLORS = {
   Happiness: { bar: '#00ff88', glow: 'rgba(0,255,136,0.6)' },
-  Neutral:   { bar: '#cc44ff', glow: 'rgba(204,68,255,0.6)' },
-  Sadness:   { bar: '#4488ff', glow: 'rgba(68,136,255,0.6)' },
-  Anger:     { bar: '#ff4466', glow: 'rgba(255,68,102,0.6)' },
-  Fear:      { bar: '#ff9900', glow: 'rgba(255,153,0,0.6)'  },
-  Surprise:  { bar: '#ff44cc', glow: 'rgba(255,68,204,0.6)' },
-  Disgust:   { bar: '#aa44ff', glow: 'rgba(170,68,255,0.6)' },
-  Contempt:  { bar: '#8800e6', glow: 'rgba(136,0,230,0.6)'  },
+  Neutral: { bar: '#cc44ff', glow: 'rgba(204,68,255,0.6)' },
+  Sadness: { bar: '#4488ff', glow: 'rgba(68,136,255,0.6)' },
+  Anger: { bar: '#ff4466', glow: 'rgba(255,68,102,0.6)' },
+  Fear: { bar: '#ff9900', glow: 'rgba(255,153,0,0.6)' },
+  Surprise: { bar: '#ff44cc', glow: 'rgba(255,68,204,0.6)' },
+  Disgust: { bar: '#aa44ff', glow: 'rgba(170,68,255,0.6)' },
+  Contempt: { bar: '#8800e6', glow: 'rgba(136,0,230,0.6)' },
 }
 
 const getEmotionColor = (emotion) =>
@@ -37,12 +38,16 @@ const MetricCard = ({ label, value, icon, accent = false, children }) => (
     animation: 'fadeSlideIn 0.4s ease-out both',
   }}>
     {/* Corner decorations */}
-    <div style={{ position: 'absolute', top: 0, left: 0, width: 12, height: 12,
+    <div style={{
+      position: 'absolute', top: 0, left: 0, width: 12, height: 12,
       borderTop: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}`,
-      borderLeft: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}` }} />
-    <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+      borderLeft: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}`
+    }} />
+    <div style={{
+      position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
       borderBottom: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}`,
-      borderRight: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}` }} />
+      borderRight: `1px solid ${accent ? '#bf00ff' : 'rgba(170,0,255,0.4)'}`
+    }} />
 
     {/* Top shimmer line */}
     {accent && (
@@ -183,12 +188,16 @@ const SessionPanel = ({ user }) => (
     position: 'relative',
     animation: 'fadeSlideIn 0.4s ease-out 0.2s both',
   }}>
-    <div style={{ position: 'absolute', top: 0, left: 0, width: 12, height: 12,
+    <div style={{
+      position: 'absolute', top: 0, left: 0, width: 12, height: 12,
       borderTop: '1px solid rgba(170,0,255,0.4)',
-      borderLeft: '1px solid rgba(170,0,255,0.4)' }} />
-    <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+      borderLeft: '1px solid rgba(170,0,255,0.4)'
+    }} />
+    <div style={{
+      position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
       borderBottom: '1px solid rgba(170,0,255,0.4)',
-      borderRight: '1px solid rgba(170,0,255,0.4)' }} />
+      borderRight: '1px solid rgba(170,0,255,0.4)'
+    }} />
 
     <div style={{
       fontFamily: 'Share Tech Mono, monospace',
@@ -206,8 +215,8 @@ const SessionPanel = ({ user }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       {[
         { label: 'OPERATOR', value: user?.full_name || 'UNKNOWN' },
-        { label: 'NODE ID',  value: `#${String(user?.id || '000').padStart(4, '0')}` },
-        { label: 'AGE',      value: user?.age ? `${user.age} CYCLES` : 'N/A' },
+        { label: 'NODE ID', value: `#${String(user?.id || '000').padStart(4, '0')}` },
+        { label: 'AGE', value: user?.age ? `${user.age} CYCLES` : 'N/A' },
         {
           label: 'BIOMETRICS',
           value: user?.face_embedding ? 'ENROLLED' : 'NOT ENROLLED',
@@ -370,16 +379,16 @@ const EmptyState = ({ onNavigate }) => (
         transition: 'all 0.2s',
       }}
       onMouseEnter={(e) => {
-        e.target.style.background   = 'rgba(170,0,255,0.1)'
-        e.target.style.borderColor  = 'rgba(170,0,255,0.6)'
-        e.target.style.color        = '#cc44ff'
-        e.target.style.boxShadow    = '0 0 12px rgba(170,0,255,0.2)'
+        e.target.style.background = 'rgba(170,0,255,0.1)'
+        e.target.style.borderColor = 'rgba(170,0,255,0.6)'
+        e.target.style.color = '#cc44ff'
+        e.target.style.boxShadow = '0 0 12px rgba(170,0,255,0.2)'
       }}
       onMouseLeave={(e) => {
-        e.target.style.background  = 'transparent'
+        e.target.style.background = 'transparent'
         e.target.style.borderColor = 'rgba(170,0,255,0.3)'
-        e.target.style.color       = 'rgba(170,0,255,0.6)'
-        e.target.style.boxShadow   = 'none'
+        e.target.style.color = 'rgba(170,0,255,0.6)'
+        e.target.style.boxShadow = 'none'
       }}
     >
       INITIATE LIVE SCAN
@@ -391,14 +400,14 @@ const EmptyState = ({ onNavigate }) => (
 // DASHBOARD
 // -----------------------------------------------------------------------------
 const Dashboard = () => {
-  const { user }    = useAuth()
-  const navigate    = useNavigate()
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const [summary,   setSummary]   = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [error,     setError]     = useState(null)
-  const [animate,   setAnimate]   = useState(false)
-  const [lastSync,  setLastSync]  = useState(null)
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [animate, setAnimate] = useState(false)
+  const [lastSync, setLastSync] = useState(null)
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -610,14 +619,14 @@ const Dashboard = () => {
                 transition: 'all 0.2s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background   = 'rgba(170,0,255,0.08)'
-                e.currentTarget.style.borderColor  = 'rgba(170,0,255,0.6)'
-                e.currentTarget.style.color        = '#cc44ff'
+                e.currentTarget.style.background = 'rgba(170,0,255,0.08)'
+                e.currentTarget.style.borderColor = 'rgba(170,0,255,0.6)'
+                e.currentTarget.style.color = '#cc44ff'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background   = 'transparent'
-                e.currentTarget.style.borderColor  = 'rgba(170,0,255,0.3)'
-                e.currentTarget.style.color        = 'rgba(170,0,255,0.7)'
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.borderColor = 'rgba(170,0,255,0.3)'
+                e.currentTarget.style.color = 'rgba(170,0,255,0.7)'
               }}
             >
               ACCESS ARCHIVES
@@ -633,12 +642,16 @@ const Dashboard = () => {
             position: 'relative',
             animation: 'fadeSlideIn 0.4s ease-out 0.25s both',
           }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 12, height: 12,
+            <div style={{
+              position: 'absolute', top: 0, left: 0, width: 12, height: 12,
               borderTop: '1px solid rgba(170,0,255,0.4)',
-              borderLeft: '1px solid rgba(170,0,255,0.4)' }} />
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+              borderLeft: '1px solid rgba(170,0,255,0.4)'
+            }} />
+            <div style={{
+              position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
               borderBottom: '1px solid rgba(170,0,255,0.4)',
-              borderRight: '1px solid rgba(170,0,255,0.4)' }} />
+              borderRight: '1px solid rgba(170,0,255,0.4)'
+            }} />
 
             <div style={{
               fontFamily: 'Share Tech Mono, monospace',
@@ -671,6 +684,80 @@ const Dashboard = () => {
             )}
           </div>
 
+          {/* Cyber Icon - Right of Matrix */}
+          <div style={{
+            gridColumn: '3',
+            background: 'rgba(19,0,32,0.9)',
+            border: '1px solid rgba(170,0,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            animation: 'fadeSlideIn 0.4s ease-out 0.3s both',
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: 6, height: 6, borderTop: '1px solid #bf00ff', borderLeft: '1px solid #bf00ff' }} />
+            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 6, height: 6, borderBottom: '1px solid #bf00ff', borderRight: '1px solid #bf00ff' }} />
+
+            <div style={{
+              position: 'relative',
+              width: '85%',
+              height: '85%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {/* Scanline overlay */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '2px',
+                background: 'rgba(191,0,255,0.4)',
+                boxShadow: '0 0 10px #bf00ff',
+                zIndex: 2,
+                pointerEvents: 'none',
+                animation: 'cyberScan 3s linear infinite'
+              }} />
+
+              <img
+                src={MainIcon}
+                alt="EmotiTrack Cybercore"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  filter: 'hue-rotate(280deg) brightness(1.2) contrast(1.1)',
+                  opacity: 0.8,
+                  maskImage: 'linear-gradient(to bottom, black 95%, transparent)',
+                  animation: 'glitchPulse 4s infinite'
+                }}
+              />
+
+              {/* Text label overlay */}
+              <div style={{
+                position: 'absolute',
+                bottom: '10%',
+                left: 0,
+                right: 0,
+                textAlign: 'center',
+                background: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(4px)',
+                color: '#f0ccff',
+                fontFamily: 'Orbitron, monospace',
+                fontSize: '0.5rem',
+                letterSpacing: '0.3em',
+                padding: '4px 0',
+                borderTop: '1px solid rgba(170,0,255,0.3)',
+                borderBottom: '1px solid rgba(170,0,255,0.3)',
+                zIndex: 3
+              }}>
+                NEURAL_LINK_ESTABLISHED
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -690,6 +777,20 @@ const Dashboard = () => {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.4; }
+        }
+        @keyframes cyberScan {
+          0% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        @keyframes glitchPulse {
+          0% { transform: scale(1); filter: hue-rotate(280deg) brightness(1.2); }
+          1% { transform: translate(-2px, 1px); filter: hue-rotate(0deg) brightness(1.5); }
+          2% { transform: translate(2px, -1px); }
+          3% { transform: translate(0, 0); filter: hue-rotate(280deg) brightness(1.2); }
+          50% { transform: scale(1.02); }
+          100% { transform: scale(1); }
         }
       `}</style>
     </div>

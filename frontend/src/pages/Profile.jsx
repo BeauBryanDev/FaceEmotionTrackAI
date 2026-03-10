@@ -6,6 +6,16 @@ import { Shield, ShieldCheck, ShieldAlert, Camera, User, Trash2, RefreshCw } fro
 import BiometricVerifyModal from '../components/BiometricVerifyModal'
 
 // -----------------------------------------------------------------------------
+// LISTS & CONFIG
+// -----------------------------------------------------------------------------
+const COUNTRIES = [
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "Italy", "Spain", "Japan", "China", "India", "Brazil",
+  "Mexico", "Russia", "South Africa", "Argentina", "Chile", "Colombia",
+  "South Korea", "Singapore", "Australia", "New Zealand", "Netherlands"
+].sort();
+
+// -----------------------------------------------------------------------------
 // SECTION CARD - reusable container with cyberpunk corner decorations
 // -----------------------------------------------------------------------------
 const SectionCard = ({ children, accent = false, danger = false }) => (
@@ -16,12 +26,16 @@ const SectionCard = ({ children, accent = false, danger = false }) => (
     padding: '1.5rem',
     position: 'relative',
   }}>
-    <div style={{ position: 'absolute', top: 0, left: 0, width: 12, height: 12,
+    <div style={{
+      position: 'absolute', top: 0, left: 0, width: 12, height: 12,
       borderTop: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}`,
-      borderLeft: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}` }} />
-    <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+      borderLeft: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}`
+    }} />
+    <div style={{
+      position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
       borderBottom: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}`,
-      borderRight: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}` }} />
+      borderRight: `1px solid ${danger ? 'rgba(255,0,80,0.4)' : 'rgba(170,0,255,0.4)'}`
+    }} />
     {children}
   </div>
 )
@@ -61,13 +75,67 @@ const Field = ({ label, name, type = 'text', value, onChange, placeholder = '' }
       }}
       onFocus={(e) => {
         e.target.style.borderColor = 'rgba(170,0,255,0.7)'
-        e.target.style.boxShadow   = '0 0 10px rgba(170,0,255,0.2)'
+        e.target.style.boxShadow = '0 0 10px rgba(170,0,255,0.2)'
       }}
       onBlur={(e) => {
         e.target.style.borderColor = 'rgba(170,0,255,0.25)'
-        e.target.style.boxShadow   = 'none'
+        e.target.style.boxShadow = 'none'
       }}
     />
+  </div>
+)
+
+const SelectField = ({ label, name, options, value, onChange, placeholder = '' }) => (
+  <div>
+    <label style={{
+      display: 'block',
+      fontFamily: 'Share Tech Mono, monospace',
+      fontSize: '0.6rem',
+      letterSpacing: '0.2em',
+      color: 'rgba(170,0,255,0.5)',
+      marginBottom: '0.35rem',
+      textTransform: 'uppercase',
+    }}>
+      {label}
+    </label>
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      style={{
+        width: '100%',
+        padding: '0.65rem 0.9rem',
+        background: 'rgba(45,0,87,0.25)',
+        border: '1px solid rgba(170,0,255,0.25)',
+        color: value ? '#f0ccff' : 'rgba(240,204,255,0.4)',
+        fontFamily: 'Share Tech Mono, monospace',
+        fontSize: '0.82rem',
+        outline: 'none',
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        cursor: 'pointer',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = 'rgba(170,0,255,0.7)'
+        e.target.style.boxShadow = '0 0 10px rgba(170,0,255,0.2)'
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'rgba(170,0,255,0.25)'
+        e.target.style.boxShadow = 'none'
+      }}
+    >
+      <option value="" disabled hidden>{placeholder}</option>
+      {options.map((opt) => (
+        <option
+          key={typeof opt === 'string' ? opt : opt.value}
+          value={typeof opt === 'string' ? opt : opt.value}
+          style={{ background: '#1a0033', color: '#f0ccff' }}
+        >
+          {typeof opt === 'string' ? opt : opt.label}
+        </option>
+      ))}
+    </select>
   </div>
 )
 
@@ -77,22 +145,22 @@ const Field = ({ label, name, type = 'text', value, onChange, placeholder = '' }
 const CyberBtn = ({ children, onClick, disabled, variant = 'default', fullWidth = false, type = 'button' }) => {
   const colors = {
     primary: {
-      bg:     'linear-gradient(135deg, rgba(102,0,179,0.7), rgba(170,0,255,0.7))',
+      bg: 'linear-gradient(135deg, rgba(102,0,179,0.7), rgba(170,0,255,0.7))',
       border: 'rgba(170,0,255,0.6)',
-      color:  '#f0ccff',
-      hover:  '0 0 20px rgba(170,0,255,0.35)',
+      color: '#f0ccff',
+      hover: '0 0 20px rgba(170,0,255,0.35)',
     },
     danger: {
-      bg:     'transparent',
+      bg: 'transparent',
       border: 'rgba(255,0,80,0.35)',
-      color:  'rgba(255,80,120,0.7)',
-      hover:  '0 0 12px rgba(255,0,80,0.2)',
+      color: 'rgba(255,80,120,0.7)',
+      hover: '0 0 12px rgba(255,0,80,0.2)',
     },
     default: {
-      bg:     'transparent',
+      bg: 'transparent',
       border: 'rgba(170,0,255,0.3)',
-      color:  'rgba(170,0,255,0.7)',
-      hover:  '0 0 12px rgba(170,0,255,0.15)',
+      color: 'rgba(170,0,255,0.7)',
+      hover: '0 0 12px rgba(170,0,255,0.15)',
     },
   }
   const c = colors[variant]
@@ -102,22 +170,22 @@ const CyberBtn = ({ children, onClick, disabled, variant = 'default', fullWidth 
       onClick={onClick}
       disabled={disabled}
       style={{
-        width:        fullWidth ? '100%' : 'auto',
-        padding:      '0.65rem 1.25rem',
-        background:   disabled ? 'rgba(170,0,255,0.05)' : c.bg,
-        border:       `1px solid ${disabled ? 'rgba(170,0,255,0.15)' : c.border}`,
-        color:        disabled ? 'rgba(170,0,255,0.25)' : c.color,
-        fontFamily:   'Orbitron, monospace',
-        fontSize:     '0.6rem',
-        fontWeight:   700,
-        letterSpacing:'0.2em',
-        textTransform:'uppercase',
-        cursor:       disabled ? 'not-allowed' : 'pointer',
-        transition:   'all 0.2s',
-        display:      'flex',
-        alignItems:   'center',
+        width: fullWidth ? '100%' : 'auto',
+        padding: '0.65rem 1.25rem',
+        background: disabled ? 'rgba(170,0,255,0.05)' : c.bg,
+        border: `1px solid ${disabled ? 'rgba(170,0,255,0.15)' : c.border}`,
+        color: disabled ? 'rgba(170,0,255,0.25)' : c.color,
+        fontFamily: 'Orbitron, monospace',
+        fontSize: '0.6rem',
+        fontWeight: 700,
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.2s',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
-        gap:          '0.5rem',
+        gap: '0.5rem',
       }}
       onMouseEnter={(e) => {
         if (!disabled) e.currentTarget.style.boxShadow = c.hover
@@ -137,37 +205,37 @@ const CyberBtn = ({ children, onClick, disabled, variant = 'default', fullWidth 
 const BiometricsPanel = () => {
   const { hasEmbedding, loading, enroll, remove } = useBiometrics()
 
-  const [webcamActive, setWebcamActive]   = useState(false)
-  const [capturing,    setCapturing]      = useState(false)
-  const [enrollStatus, setEnrollStatus]   = useState('IDLE')
-  const [statusMsg,    setStatusMsg]      = useState(null)
+  const [webcamActive, setWebcamActive] = useState(false)
+  const [capturing, setCapturing] = useState(false)
+  const [enrollStatus, setEnrollStatus] = useState('IDLE')
+  const [statusMsg, setStatusMsg] = useState(null)
 
-  const videoRef  = useRef(null)
+  const videoRef = useRef(null)
   const canvasRef = useRef(document.createElement('canvas'))
   const streamRef = useRef(null)
 
   useEffect(() => {
-  if (webcamActive && videoRef.current && streamRef.current) {
-    videoRef.current.srcObject = streamRef.current
-  }
-}, [webcamActive])
+    if (webcamActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current
+    }
+  }, [webcamActive])
 
   // Open webcam
   const openWebcam = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: 'user' },
-    })
-    streamRef.current = stream
-    setWebcamActive(true)   // First time we open the webcam
-    setStatusMsg(null)
-    // Save the stream to the video element
-    if (videoRef.current) videoRef.current.srcObject = stream
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' },
+      })
+      streamRef.current = stream
+      setWebcamActive(true)   // First time we open the webcam
+      setStatusMsg(null)
+      // Save the stream to the video element
+      if (videoRef.current) videoRef.current.srcObject = stream
 
-  } catch {
-    setStatusMsg('CAMERA ACCESS DENIED. CHECK BROWSER PERMISSIONS.')
+    } catch {
+      setStatusMsg('CAMERA ACCESS DENIED. CHECK BROWSER PERMISSIONS.')
+    }
   }
-}
 
   // Close webcam and release tracks
   const closeWebcam = useCallback(() => {
@@ -186,8 +254,8 @@ const BiometricsPanel = () => {
     setCapturing(true)
     setEnrollStatus('CAPTURING')
 
-    const canvas  = canvasRef.current
-    canvas.width  = video.videoWidth
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
 
@@ -229,11 +297,11 @@ const BiometricsPanel = () => {
   }
 
   const enrollBtnLabel = {
-    IDLE:      'CAPTURE AND ENROLL',
+    IDLE: 'CAPTURE AND ENROLL',
     CAPTURING: 'CAPTURING...',
     ENROLLING: 'ENROLLING...',
-    SUCCESS:   'ENROLLED',
-    ERROR:     'RETRY',
+    SUCCESS: 'ENROLLED',
+    ERROR: 'RETRY',
   }[enrollStatus]
 
   const [showVerifyModal, setShowVerifyModal] = useState(false)
@@ -340,10 +408,10 @@ const BiometricsPanel = () => {
               position: 'absolute',
               width: 16, height: 16,
               ...pos,
-              borderTop:    pos.borderTop    ? '2px solid rgba(170,0,255,0.6)' : 'none',
-              borderLeft:   pos.borderLeft   ? '2px solid rgba(170,0,255,0.6)' : 'none',
+              borderTop: pos.borderTop ? '2px solid rgba(170,0,255,0.6)' : 'none',
+              borderLeft: pos.borderLeft ? '2px solid rgba(170,0,255,0.6)' : 'none',
               borderBottom: pos.borderBottom ? '2px solid rgba(170,0,255,0.6)' : 'none',
-              borderRight:  pos.borderRight  ? '2px solid rgba(170,0,255,0.6)' : 'none',
+              borderRight: pos.borderRight ? '2px solid rgba(170,0,255,0.6)' : 'none',
             }} />
           ))}
           {/* Label */}
@@ -415,15 +483,18 @@ const Profile = () => {
   const { user, setUser, logout } = useAuth()
   const { hasEmbedding } = useBiometrics()
 
-  const [form, setForm]       = useState({
-    full_name:    user?.full_name    || '',
-    email:        user?.email        || '',
+  const [form, setForm] = useState({
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    age: user?.age || '',
+    gender: user?.gender || '',
+    country: user?.country || '',
     phone_number: user?.phone_number || '',
-    password:     '',
+    password: '',
   })
-  const [saving,     setSaving]     = useState(false)
+  const [saving, setSaving] = useState(false)
   const [profileMsg, setProfileMsg] = useState(null)
-  const [profileOk,  setProfileOk]  = useState(false)
+  const [profileOk, setProfileOk] = useState(false)
   const [showVerifyModal, setShowVerifyModal] = useState(false)
 
   const pendingPayloadRef = useRef(null)
@@ -432,13 +503,16 @@ const Profile = () => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
 
   const saveProfile = async (e) => {
-    
+
     e.preventDefault()
     const payload = {
-      full_name:    form.full_name,
-      email:        form.email,
+      full_name: form.full_name,
+      email: form.email,
+      age: form.age ? parseInt(form.age) : undefined,
+      gender: form.gender || undefined,
+      country: form.country || undefined,
       phone_number: form.phone_number || undefined,
-      password:     form.password     || undefined,
+      password: form.password || undefined,
     }
     if (hasEmbedding) {
       // store payload and open biometric verification modal
@@ -450,9 +524,9 @@ const Profile = () => {
     await executeSave(payload)
   }
 
-const executeSave = async (payload) => {
-  setSaving(true)
-  setProfileMsg(null)
+  const executeSave = async (payload) => {
+    setSaving(true)
+    setProfileMsg(null)
 
     try {
       const updated = await updateCurrentUser(payload)
@@ -479,148 +553,167 @@ const executeSave = async (payload) => {
       setProfileOk(false)
     }
   }
-  
+
 
   return (
 
     <>
-    {showVerifyModal && (
-      <BiometricVerifyModal
-        onVerified={async () => {
-          setShowVerifyModal(false)
-          await executeSave(pendingPayloadRef.current)
-        }}
-        onCancel={() => setShowVerifyModal(false)}
-      />
-    )}
+      {showVerifyModal && (
+        <BiometricVerifyModal
+          onVerified={async () => {
+            setShowVerifyModal(false)
+            await executeSave(pendingPayloadRef.current)
+          }}
+          onCancel={() => setShowVerifyModal(false)}
+        />
+      )}
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-      {/* Page header */}
-      <div style={{
-        paddingBottom: '1.25rem',
-        borderBottom: '1px solid rgba(170,0,255,0.15)',
-      }}>
+        {/* Page header */}
         <div style={{
-          fontFamily: 'Share Tech Mono, monospace',
-          fontSize: '0.6rem',
-          letterSpacing: '0.25em',
-          color: 'rgba(170,0,255,0.4)',
-          marginBottom: '0.4rem',
+          paddingBottom: '1.25rem',
+          borderBottom: '1px solid rgba(170,0,255,0.15)',
         }}>
-          SYSTEM / OPERATOR
+          <div style={{
+            fontFamily: 'Share Tech Mono, monospace',
+            fontSize: '0.6rem',
+            letterSpacing: '0.25em',
+            color: 'rgba(170,0,255,0.4)',
+            marginBottom: '0.4rem',
+          }}>
+            SYSTEM / OPERATOR
+          </div>
+          <h1 style={{
+            fontFamily: 'Orbitron, monospace',
+            fontSize: '1.5rem',
+            fontWeight: 900,
+            color: '#f0ccff',
+            letterSpacing: '0.15em',
+            margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+          }}>
+            <User size={22} color="#bf00ff" />
+            OPERATOR PROFILE
+          </h1>
         </div>
-        <h1 style={{
-          fontFamily: 'Orbitron, monospace',
-          fontSize: '1.5rem',
-          fontWeight: 900,
-          color: '#f0ccff',
-          letterSpacing: '0.15em',
-          margin: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
+
+        {/* Two column layout on large screens */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '1.5rem',
+          alignItems: 'start',
         }}>
-          <User size={22} color="#bf00ff" />
-          OPERATOR PROFILE
-        </h1>
-      </div>
 
-      {/* Two column layout on large screens */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '1.5rem',
-        alignItems: 'start',
-      }}>
+          {/* LEFT - Profile form */}
+          <SectionCard>
+            <div style={{
+              fontFamily: 'Share Tech Mono, monospace',
+              fontSize: '0.6rem',
+              letterSpacing: '0.2em',
+              color: 'rgba(170,0,255,0.5)',
+              marginBottom: '1.25rem',
+              paddingBottom: '0.75rem',
+              borderBottom: '1px solid rgba(170,0,255,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}>
+              <User size={13} /> IDENTITY DATA
+            </div>
 
-        {/* LEFT - Profile form */}
-        <SectionCard>
+            {profileMsg && (
+              <div style={{
+                marginBottom: '1rem',
+                padding: '0.5rem 0.75rem',
+                background: profileOk ? 'rgba(0,255,136,0.06)' : 'rgba(255,0,80,0.06)',
+                border: `1px solid ${profileOk ? 'rgba(0,255,136,0.25)' : 'rgba(255,0,80,0.25)'}`,
+                fontFamily: 'Share Tech Mono, monospace',
+                fontSize: '0.62rem',
+                letterSpacing: '0.1em',
+                color: profileOk ? '#00ff88' : '#ff4466',
+              }}>
+                {profileMsg}
+              </div>
+            )}
+
+            <form
+              onSubmit={saveProfile}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+            >
+              <Field label="Full Name" name="full_name" value={form.full_name} onChange={onChange} />
+              <Field label="Email" name="email" value={form.email} onChange={onChange} type="email" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <Field label="Age" name="age" value={form.age} onChange={onChange} type="number" />
+                <SelectField
+                  label="Gender"
+                  name="gender"
+                  value={form.gender}
+                  onChange={onChange}
+                  placeholder="Select Gender"
+                  options={[{ label: 'Male', value: 'M' }, { label: 'Female', value: 'F' }]}
+                />
+              </div>
+              <SelectField
+                label="Country"
+                name="country"
+                value={form.country}
+                onChange={onChange}
+                placeholder="Select Country"
+                options={COUNTRIES}
+              />
+              <Field label="Phone" name="phone_number" value={form.phone_number} onChange={onChange} placeholder="Optional" />
+              <Field label="New Password" name="password" value={form.password} onChange={onChange} type="password" placeholder="Leave blank to keep current" />
+
+              <CyberBtn type="submit" variant="primary" fullWidth disabled={saving}>
+                <RefreshCw size={13} style={{ animation: saving ? 'spin 1s linear infinite' : 'none' }} />
+                {saving ? 'SAVING...' : 'SAVE PROFILE'}
+              </CyberBtn>
+            </form>
+          </SectionCard>
+
+          {/* RIGHT - Biometrics */}
+          <BiometricsPanel />
+        </div>
+
+        {/* DANGER ZONE */}
+        <SectionCard danger>
           <div style={{
             fontFamily: 'Share Tech Mono, monospace',
             fontSize: '0.6rem',
             letterSpacing: '0.2em',
-            color: 'rgba(170,0,255,0.5)',
-            marginBottom: '1.25rem',
-            paddingBottom: '0.75rem',
-            borderBottom: '1px solid rgba(170,0,255,0.1)',
+            color: 'rgba(255,0,80,0.5)',
+            marginBottom: '1rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
           }}>
-            <User size={13} /> IDENTITY DATA
+            <Trash2 size={13} /> DANGER ZONE
           </div>
-
-          {profileMsg && (
-            <div style={{
-              marginBottom: '1rem',
-              padding: '0.5rem 0.75rem',
-              background: profileOk ? 'rgba(0,255,136,0.06)' : 'rgba(255,0,80,0.06)',
-              border: `1px solid ${profileOk ? 'rgba(0,255,136,0.25)' : 'rgba(255,0,80,0.25)'}`,
-              fontFamily: 'Share Tech Mono, monospace',
-              fontSize: '0.62rem',
-              letterSpacing: '0.1em',
-              color: profileOk ? '#00ff88' : '#ff4466',
-            }}>
-              {profileMsg}
-            </div>
-          )}
-
-          <form
-            onSubmit={saveProfile}
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
-            <Field label="Full Name"     name="full_name"    value={form.full_name}    onChange={onChange} />
-            <Field label="Email"         name="email"        value={form.email}        onChange={onChange} type="email" />
-            <Field label="Phone"         name="phone_number" value={form.phone_number} onChange={onChange} placeholder="Optional" />
-            <Field label="New Password"  name="password"     value={form.password}     onChange={onChange} type="password" placeholder="Leave blank to keep current" />
-
-            <CyberBtn type="submit" variant="primary" fullWidth disabled={saving}>
-              <RefreshCw size={13} style={{ animation: saving ? 'spin 1s linear infinite' : 'none' }} />
-              {saving ? 'SAVING...' : 'SAVE PROFILE'}
-            </CyberBtn>
-          </form>
+          <p style={{
+            fontFamily: 'Share Tech Mono, monospace',
+            fontSize: '0.62rem',
+            color: 'rgba(255,80,120,0.5)',
+            marginBottom: '1rem',
+            letterSpacing: '0.05em',
+          }}>
+            Permanently deletes your account, all emotion records, and biometric data. This action cannot be undone.
+          </p>
+          <CyberBtn onClick={removeAccount} variant="danger">
+            <Trash2 size={13} /> DELETE ACCOUNT
+          </CyberBtn>
         </SectionCard>
 
-        {/* RIGHT - Biometrics */}
-        <BiometricsPanel />
-      </div>
-
-      {/* DANGER ZONE */}
-      <SectionCard danger>
-        <div style={{
-          fontFamily: 'Share Tech Mono, monospace',
-          fontSize: '0.6rem',
-          letterSpacing: '0.2em',
-          color: 'rgba(255,0,80,0.5)',
-          marginBottom: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}>
-          <Trash2 size={13} /> DANGER ZONE
-        </div>
-        <p style={{
-          fontFamily: 'Share Tech Mono, monospace',
-          fontSize: '0.62rem',
-          color: 'rgba(255,80,120,0.5)',
-          marginBottom: '1rem',
-          letterSpacing: '0.05em',
-        }}>
-          Permanently deletes your account, all emotion records, and biometric data. This action cannot be undone.
-        </p>
-        <CyberBtn onClick={removeAccount} variant="danger">
-          <Trash2 size={13} /> DELETE ACCOUNT
-        </CyberBtn>
-      </SectionCard>
-
-      <style>{`
+        <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
         }
       `}</style>
-    </div>
+      </div>
     </>
 
   )

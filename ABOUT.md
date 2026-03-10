@@ -1,7 +1,7 @@
-# FaceEmotionTrackAI
+# EMOTITRON
 
-FaceEmotionTrackAI is a real-time biometric and emotion intelligence web application.
-It captures a user’s live face stream, validates that the subject is a real person (anti-spoofing), verifies identity against a registered facial template, detects the current emotion, and stores historical emotion statistics for analytics.
+Emotitron is a real-time biometric and emotion intelligence web application.
+It captures a user’s live face stream frame, validates that the subject is a real person (anti-spoofing), verifies identity against a registered facial template, detects the current emotion, and stores historical emotion statistics for analytics.
 
 It is designed for authenticated users with a secure profile workflow and biometric-gated sensitive actions.
 

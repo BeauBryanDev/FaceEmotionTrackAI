@@ -4,9 +4,15 @@ import { useAuth } from '../context/AuthContext'
 import { registerUser } from '../api/auth'
 
 // -----------------------------------------------------------------------------
-// FIELD CONFIG
-// Drives the form declaratively - adding a field only requires this array
+// LISTS & CONFIG
 // -----------------------------------------------------------------------------
+const COUNTRIES = [
+  "United States", "Canada", "United Kingdom", "Australia", "Germany",
+  "France", "Italy", "Spain", "Japan", "China", "India", "Brazil",
+  "Mexico", "Russia", "South Africa", "Argentina", "Chile", "Colombia",
+  "South Korea", "Singapore", "Australia", "New Zealand", "Netherlands"
+].sort();
+
 const FIELDS = [
   {
     name: 'full_name',
@@ -23,17 +29,18 @@ const FIELDS = [
     autoComplete: 'email',
   },
   {
-    name: 'phone',
+    name: 'phone_number',
     label: 'PHONE',
-    placeholder: '+1 (123) 456-7890',
+    placeholder: '+11234567890',
     type: 'tel',
     autoComplete: 'tel',
   },
   {
     name: 'country',
     label: 'COUNTRY',
-    placeholder: 'United States',
-    type: 'text',
+    placeholder: 'Select Country',
+    type: 'select',
+    options: COUNTRIES,
     autoComplete: 'off',
   },
   {
@@ -48,8 +55,12 @@ const FIELDS = [
   {
     name: 'gender',
     label: 'GENDER',
-    placeholder: 'Male',
-    type: 'text',
+    placeholder: 'Select Gender',
+    type: 'select',
+    options: [
+      { label: 'Male', value: 'M' },
+      { label: 'Female', value: 'F' }
+    ],
     autoComplete: 'off',
   },
   {
@@ -73,7 +84,14 @@ const Register = () => {
   const { login } = useAuth()
 
   const [form, setForm] = useState({
-    full_name: '', email: '', age: '', password: '', confirm_password: '',
+    full_name: '',
+    email: '',
+    phone_number: '',
+    country: '',
+    age: '',
+    gender: '',
+    password: '',
+    confirm_password: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -90,6 +108,8 @@ const Register = () => {
     if (!form.full_name.trim()) return 'OPERATOR NAME REQUIRED'
     if (!form.email.trim()) return 'IDENTITY EMAIL REQUIRED'
     if (!form.age || form.age < 1) return 'VALID AGE REQUIRED'
+    if (!form.gender) return 'GENDER REQUIRED'
+    if (!form.country) return 'COUNTRY REQUIRED'
     if (form.password.length < 8) return 'CIPHER MUST BE 8+ CHARACTERS'
     if (form.password !== form.confirm_password) return 'CIPHERS DO NOT MATCH'
     return null
@@ -111,6 +131,9 @@ const Register = () => {
       await registerUser({
         full_name: form.full_name.trim(),
         email: form.email.trim(),
+        phone_number: form.phone_number.trim(),
+        country: form.country,
+        gender: form.gender,
         age: parseInt(form.age),
         password: form.password,
       })
@@ -220,40 +243,86 @@ const Register = () => {
             }}>
               {field.label}
             </label>
-            <input
-              type={field.type}
-              name={field.name}
-              value={form[field.name]}
-              onChange={handleChange}
-              placeholder={field.placeholder}
-              disabled={loading}
-              autoComplete={field.autoComplete}
-              min={field.min}
-              max={field.max}
-              style={{
-                width: '100%',
-                padding: '0.7rem 1rem',
-                background: focusedField === field.name
-                  ? 'rgba(45,0,87,0.5)'
-                  : 'rgba(45,0,87,0.3)',
-                border: `1px solid ${error && !form[field.name]
+            {field.type === 'select' ? (
+              <select
+                name={field.name}
+                value={form[field.name]}
+                onChange={handleChange}
+                disabled={loading}
+                onFocus={() => setFocusedField(field.name)}
+                onBlur={() => setFocusedField(null)}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem 1rem',
+                  background: focusedField === field.name
+                    ? 'rgba(45,0,87,0.5)'
+                    : 'rgba(45,0,87,0.3)',
+                  border: `1px solid ${error && !form[field.name]
                     ? 'rgba(255,0,100,0.5)'
                     : focusedField === field.name
                       ? 'rgba(204,68,255,0.8)'
                       : 'rgba(170,0,255,0.3)'
-                  }`,
-                color: '#f0ccff',
-                fontFamily: 'Share Tech Mono, monospace',
-                fontSize: '0.85rem',
-                outline: 'none',
-                transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
-                boxShadow: focusedField === field.name
-                  ? '0 0 12px rgba(170,0,255,0.25)'
-                  : 'none',
-              }}
-              onFocus={() => setFocusedField(field.name)}
-              onBlur={() => setFocusedField(null)}
-            />
+                    }`,
+                  color: form[field.name] ? '#f0ccff' : 'rgba(240,204,255,0.4)',
+                  fontFamily: 'Share Tech Mono, monospace',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
+                  boxShadow: focusedField === field.name
+                    ? '0 0 12px rgba(170,0,255,0.25)'
+                    : 'none',
+                }}
+              >
+                <option value="" disabled hidden>{field.placeholder}</option>
+                {field.options.map((opt) => (
+                  <option
+                    key={typeof opt === 'string' ? opt : opt.value}
+                    value={typeof opt === 'string' ? opt : opt.value}
+                    style={{ background: '#1a0033', color: '#f0ccff' }}
+                  >
+                    {typeof opt === 'string' ? opt : opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={field.type}
+                name={field.name}
+                value={form[field.name]}
+                onChange={handleChange}
+                placeholder={field.placeholder}
+                disabled={loading}
+                autoComplete={field.autoComplete}
+                min={field.min}
+                max={field.max}
+                style={{
+                  width: '100%',
+                  padding: '0.7rem 1rem',
+                  background: focusedField === field.name
+                    ? 'rgba(45,0,87,0.5)'
+                    : 'rgba(45,0,87,0.3)',
+                  border: `1px solid ${error && !form[field.name]
+                    ? 'rgba(255,0,100,0.5)'
+                    : focusedField === field.name
+                      ? 'rgba(204,68,255,0.8)'
+                      : 'rgba(170,0,255,0.3)'
+                    }`,
+                  color: '#f0ccff',
+                  fontFamily: 'Share Tech Mono, monospace',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
+                  boxShadow: focusedField === field.name
+                    ? '0 0 12px rgba(170,0,255,0.25)'
+                    : 'none',
+                }}
+                onFocus={() => setFocusedField(field.name)}
+                onBlur={() => setFocusedField(null)}
+              />
+            )}
           </div>
         ))}
 

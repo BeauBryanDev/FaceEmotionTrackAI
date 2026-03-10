@@ -56,7 +56,10 @@ const EmotionTimeline = ({ data }) => {
   const formatted = useMemo(() => {
     const source = Array.isArray(data) ? data : Array.isArray(data?.timeline) ? data.timeline : []
 
-    return source.map((d) => ({
+    // Slice to last 30 records to keep the graph focused and performant
+    const recentSource = source.slice(-30);
+
+    return recentSource.map((d) => ({
       ...d,
       Anger: Number(getEmotionValue(d, "Anger")),
       Contempt: Number(getEmotionValue(d, "Contempt")),
@@ -88,7 +91,7 @@ const EmotionTimeline = ({ data }) => {
     Anger: "#ff0044",
     Contempt: "#ff8800",
     Disgust: "#00ffaa",
-    Fear:  "#60057cff",
+    Fear: "#60057cff",
     Happiness: "#bf00ff",
     Neutral: "#aaaaaa",
     Sadness: "#ffaa00",
@@ -211,12 +214,11 @@ const EmotionTimeline = ({ data }) => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-        
+
       <div className="flex justify-between mt-2 text-[9px] font-mono text-purple-500">
         <span>DOMINANT_SIGNAL_TRACK</span>
         <span>AI_EMOTION_CLASSIFIER</span>
-    </div>
-
+      </div>
 
       <div className="mt-3 flex h-4 w-full overflow-hidden border border-purple-900">
         {processed.map((p, i) => (

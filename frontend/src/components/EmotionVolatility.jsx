@@ -2,13 +2,12 @@ const EmotionVolatility = ({ data }) => {
 
   let changes = 0
 
-  for(let i=1;i<data.length;i++)
-  {
-    if(data[i].dominant_emotion !== data[i-1].dominant_emotion)
+  for (let i = 1; i < data.length; i++) {
+    if (data[i].emotion !== data[i - 1].emotion)
       changes++
   }
 
-  const volatility = (changes / data.length * 100).toFixed(1)
+  const volatility = (data.length > 0 ? (changes / data.length * 100) : 0).toFixed(1)
 
   return (
 
