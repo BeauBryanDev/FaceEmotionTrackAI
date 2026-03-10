@@ -1,0 +1,22 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::emotitron-models-private",
+                "arn:aws:s3:::emotitron-models-private/*"
+            ],
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:PrincipalArn": [
+                        "arn:aws:iam::401257550058:role/emotitron-task-execution-role",
+                        "arn:aws:iam::401257550058:user/beauman10"
+                    ]
+                }
+            }
+        }
+    ]
+}
