@@ -4,6 +4,7 @@ import { useBiometrics } from '../context/Biometrics'
 import { updateCurrentUser, deleteCurrentUser } from '../api/users'
 import { Shield, ShieldCheck, ShieldAlert, Camera, User, Trash2, RefreshCw } from 'lucide-react'
 import BiometricVerifyModal from '../components/BiometricVerifyModal'
+import CyberCalendar from '../components/CyberCalendar'
 
 // -----------------------------------------------------------------------------
 // LISTS & CONFIG
@@ -321,9 +322,9 @@ const BiometricsPanel = () => {
       }}>
         <div style={{
           fontFamily: 'Share Tech Mono, monospace',
-          fontSize: '0.6rem',
+          fontSize: '1.2rem',
           letterSpacing: '0.2em',
-          color: 'rgba(170,0,255,0.5)',
+          color: 'rgba(165, 111, 172, 0.5)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
@@ -675,8 +676,11 @@ const Profile = () => {
             </form>
           </SectionCard>
 
-          {/* RIGHT - Biometrics */}
-          <BiometricsPanel />
+          {/* RIGHT - Biometrics & Analytics */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <BiometricsPanel />
+            <CyberCalendar />
+          </div>
         </div>
 
         {/* DANGER ZONE */}

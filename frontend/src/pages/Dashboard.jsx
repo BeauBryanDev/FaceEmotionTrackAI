@@ -4,6 +4,7 @@ import { Activity, Cpu, Database, Terminal, Zap, RefreshCw, User, Shield } from 
 import { getEmotionSummary } from '../api/emotions'
 import { useAuth } from '../context/AuthContext'
 import MainIcon from '../assets/emotitrackincon.jpg'
+import CyberCalendar from '../components/CyberCalendar'
 
 // -----------------------------------------------------------------------------
 // EMOTION COLOR MAP
@@ -23,10 +24,8 @@ const EMOTION_COLORS = {
 const getEmotionColor = (emotion) =>
   EMOTION_COLORS[emotion] || { bar: '#bf00ff', glow: 'rgba(170,0,255,0.6)' }
 
-// -----------------------------------------------------------------------------
 // METRIC CARD
 // Reusable card with cyberpunk corner decorations and glow
-// -----------------------------------------------------------------------------
 const MetricCard = ({ label, value, icon, accent = false, children }) => (
   <div style={{
     background: accent ? 'rgba(45,0,87,0.4)' : 'rgba(19,0,32,0.9)',
@@ -99,10 +98,8 @@ const MetricCard = ({ label, value, icon, accent = false, children }) => (
   </div>
 )
 
-// -----------------------------------------------------------------------------
 // EMOTION BAR
 // Animated progress bar with per-emotion color
-// -----------------------------------------------------------------------------
 const EmotionBar = ({ stat, index, animate }) => {
   const { bar, glow } = getEmotionColor(stat.emotion)
 
@@ -176,10 +173,8 @@ const EmotionBar = ({ stat, index, animate }) => {
   )
 }
 
-// -----------------------------------------------------------------------------
 // SESSION INFO PANEL
 // Shows authenticated user details and biometric enrollment status
-// -----------------------------------------------------------------------------
 const SessionPanel = ({ user }) => (
   <div style={{
     background: 'rgba(19,0,32,0.9)',
@@ -216,7 +211,7 @@ const SessionPanel = ({ user }) => (
       {[
         { label: 'OPERATOR', value: user?.full_name || 'UNKNOWN' },
         { label: 'NODE ID', value: `#${String(user?.id || '000').padStart(4, '0')}` },
-        { label: 'AGE', value: user?.age ? `${user.age} CYCLES` : 'N/A' },
+        { label: 'AGE', value: user?.age ? `${user.age} YEARS` : 'N/A' },
         {
           label: 'BIOMETRICS',
           value: user?.face_embedding ? 'ENROLLED' : 'NOT ENROLLED',
@@ -254,9 +249,7 @@ const SessionPanel = ({ user }) => (
   </div>
 )
 
-// -----------------------------------------------------------------------------
 // LOADING STATE
-// -----------------------------------------------------------------------------
 const LoadingState = () => (
   <div style={{
     flex: 1,
@@ -294,9 +287,7 @@ const LoadingState = () => (
   </div>
 )
 
-// -----------------------------------------------------------------------------
 // ERROR STATE
-// -----------------------------------------------------------------------------
 const ErrorState = ({ message, onRetry }) => (
   <div style={{
     padding: '1.25rem',
@@ -453,15 +444,15 @@ const Dashboard = () => {
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         paddingBottom: '1.25rem',
-        borderBottom: '1px solid rgba(170,0,255,0.15)',
+        borderBottom: '1px solid rgba(168, 86, 209, 0.15)',
         animation: 'fadeSlideIn 0.3s ease-out',
       }}>
         <div>
           <div style={{
             fontFamily: 'Share Tech Mono, monospace',
-            fontSize: '0.6rem',
+            fontSize: '0.85rem',
             letterSpacing: '0.25em',
-            color: 'rgba(170,0,255,0.4)',
+            color: 'rgba(219, 81, 189, 0.4)',
             marginBottom: '0.4rem',
           }}>
             SYSTEM / TELEMETRY
@@ -470,7 +461,7 @@ const Dashboard = () => {
             fontFamily: 'Orbitron, monospace',
             fontSize: '1.5rem',
             fontWeight: 900,
-            color: '#f0ccff',
+            color: '#6b3a80ff',
             letterSpacing: '0.15em',
             margin: 0,
             display: 'flex',
@@ -493,9 +484,9 @@ const Dashboard = () => {
               gap: '0.4rem',
               background: 'transparent',
               border: '1px solid rgba(170,0,255,0.3)',
-              color: 'rgba(170,0,255,0.6)',
+              color: 'rgba(158, 97, 189, 0.6)',
               fontFamily: 'Share Tech Mono, monospace',
-              fontSize: '0.6rem',
+              fontSize: '0.85rem',
               letterSpacing: '0.15em',
               padding: '0.5rem 0.85rem',
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -538,222 +529,195 @@ const Dashboard = () => {
       {!loading && !error && summary && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 2fr',
-          gridTemplateRows: 'auto auto',
+          gridTemplateColumns: 'minmax(250px, 1fr) minmax(280px, 1.1fr) 280px',
+          gridTemplateRows: 'auto auto auto auto',
           gap: '1.25rem',
         }}>
 
-          {/* Total scans */}
-          <MetricCard
-            label="TOTAL BIOMETRIC SCANS"
-            value={summary.total_detections ?? 0}
-            icon={<Database size={12} />}
-          />
+          {/* COLUMN 1: NEURAL STATS STACK */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <MetricCard
+              label="TOTAL BIOMETRIC SCANS"
+              value={summary.total_detections ?? 0}
+              icon={<Database size={12} />}
+            />
+            <MetricCard
+              label="PRIMARY EMOTION"
+              value={summary.dominant_emotion || 'N/A'}
+              icon={<Cpu size={12} />}
+              accent
+            />
+          </div>
 
-          {/* Dominant emotion */}
-          <MetricCard
-            label="PRIMARY NEURAL STATE"
-            value={summary.dominant_emotion || 'N/A'}
-            icon={<Cpu size={12} />}
-            accent
-          />
-
-          {/* Session info - spans right column first row */}
-          <div style={{ gridRow: '1 / 3' }}>
+          {/* COLUMN 2: SESSION & ACTIONS */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <SessionPanel user={user} />
+
+            <div style={{
+              display: 'flex',
+              gap: '0.75rem',
+              animation: 'fadeSlideIn 0.4s ease-out 0.15s both',
+            }}>
+              <button
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: 'linear-gradient(135deg, rgba(102,0,179,0.6), rgba(170,0,255,0.6))',
+                  border: '1px solid rgba(170,0,255,0.5)',
+                  color: '#f0ccff',
+                  fontFamily: 'Orbitron, monospace',
+                  fontSize: '0.6rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 0 16px rgba(170,0,255,0.2)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 24px rgba(170,0,255,0.4)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 16px rgba(170,0,255,0.2)'
+                }}
+              >
+                <Activity size={14} /> LIVE SCAN
+              </button>
+              <button
+                onClick={() => navigate('/emotions')}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: 'transparent',
+                  border: '1px solid rgba(170,0,255,0.3)',
+                  color: 'rgba(170,0,255,0.7)',
+                  fontFamily: 'Orbitron, monospace',
+                  fontSize: '0.6rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(170,0,255,0.08)'
+                  e.currentTarget.style.borderColor = 'rgba(170,0,255,0.6)'
+                  e.currentTarget.style.color = '#cc44ff'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.borderColor = 'rgba(170,0,255,0.3)'
+                  e.currentTarget.style.color = 'rgba(170,0,255,0.7)'
+                }}
+              >
+                ARCHIVES
+              </button>
+            </div>
           </div>
 
-          {/* Quick actions */}
+          {/* COLUMN 3: TEMPORAL HUD (TOP RIGHT) */}
+          <div style={{ gridColumn: '3', gridRow: '1 / 3' }}>
+            <CyberCalendar />
+          </div>
+
+          {/* FULL WIDTH BOTTOM: MATRIX & ICON HUD SIDE-BY-SIDE */}
           <div style={{
-            gridColumn: '1 / 3',
+            gridColumn: '1 / 4',
             display: 'flex',
-            gap: '0.75rem',
-            animation: 'fadeSlideIn 0.4s ease-out 0.15s both',
-          }}>
-            <button
-              onClick={() => navigate('/dashboard')}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                background: 'linear-gradient(135deg, rgba(102,0,179,0.6), rgba(170,0,255,0.6))',
-                border: '1px solid rgba(170,0,255,0.5)',
-                color: '#f0ccff',
-                fontFamily: 'Orbitron, monospace',
-                fontSize: '0.6rem',
-                fontWeight: 700,
-                letterSpacing: '0.15em',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s',
-                boxShadow: '0 0 16px rgba(170,0,255,0.2)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 24px rgba(170,0,255,0.4)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 0 16px rgba(170,0,255,0.2)'
-              }}
-            >
-              <Activity size={14} /> INITIATE LIVE SCAN
-            </button>
-            <button
-              onClick={() => navigate('/emotions')}
-              style={{
-                flex: 1,
-                padding: '0.75rem',
-                background: 'transparent',
-                border: '1px solid rgba(170,0,255,0.3)',
-                color: 'rgba(170,0,255,0.7)',
-                fontFamily: 'Orbitron, monospace',
-                fontSize: '0.6rem',
-                fontWeight: 700,
-                letterSpacing: '0.15em',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(170,0,255,0.08)'
-                e.currentTarget.style.borderColor = 'rgba(170,0,255,0.6)'
-                e.currentTarget.style.color = '#cc44ff'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.borderColor = 'rgba(170,0,255,0.3)'
-                e.currentTarget.style.color = 'rgba(170,0,255,0.7)'
-              }}
-            >
-              ACCESS ARCHIVES
-            </button>
-          </div>
-
-          {/* Emotion distribution - full width bottom row */}
-          <div style={{
-            gridColumn: '1 / 3',
-            background: 'rgba(19,0,32,0.9)',
-            border: '1px solid rgba(170,0,255,0.2)',
-            padding: '1.5rem',
-            position: 'relative',
+            gap: '1.25rem',
             animation: 'fadeSlideIn 0.4s ease-out 0.25s both',
           }}>
+            {/* Neural Distribution Matrix - Left */}
             <div style={{
-              position: 'absolute', top: 0, left: 0, width: 12, height: 12,
-              borderTop: '1px solid rgba(170,0,255,0.4)',
-              borderLeft: '1px solid rgba(170,0,255,0.4)'
-            }} />
-            <div style={{
-              position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
-              borderBottom: '1px solid rgba(170,0,255,0.4)',
-              borderRight: '1px solid rgba(170,0,255,0.4)'
-            }} />
-
-            <div style={{
-              fontFamily: 'Share Tech Mono, monospace',
-              fontSize: '0.6rem',
-              letterSpacing: '0.2em',
-              color: 'rgba(170,0,255,0.5)',
-              marginBottom: '1.25rem',
-              paddingBottom: '0.75rem',
-              borderBottom: '1px solid rgba(170,0,255,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-            }}>
-              <Activity size={12} /> NEURAL DISTRIBUTION MATRIX
-            </div>
-
-            {summary.emotion_stats && summary.emotion_stats.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {summary.emotion_stats.map((stat, i) => (
-                  <EmotionBar
-                    key={stat.emotion}
-                    stat={stat}
-                    index={i}
-                    animate={animate}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState onNavigate={() => navigate('/dashboard')} />
-            )}
-          </div>
-
-          {/* Cyber Icon - Right of Matrix */}
-          <div style={{
-            gridColumn: '3',
-            background: 'rgba(19,0,32,0.9)',
-            border: '1px solid rgba(170,0,255,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            animation: 'fadeSlideIn 0.4s ease-out 0.3s both',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: 6, height: 6, borderTop: '1px solid #bf00ff', borderLeft: '1px solid #bf00ff' }} />
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 6, height: 6, borderBottom: '1px solid #bf00ff', borderRight: '1px solid #bf00ff' }} />
-
-            <div style={{
+              flex: 2,
+              background: 'rgba(19,0,32,0.9)',
+              border: '1px solid rgba(170,0,255,0.2)',
+              padding: '1.5rem',
               position: 'relative',
-              width: '85%',
-              height: '85%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
             }}>
-              {/* Scanline overlay */}
               <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'rgba(191,0,255,0.4)',
-                boxShadow: '0 0 10px #bf00ff',
-                zIndex: 2,
-                pointerEvents: 'none',
-                animation: 'cyberScan 3s linear infinite'
+                position: 'absolute', top: 0, left: 0, width: 12, height: 12,
+                borderTop: '1px solid rgba(170,0,255,0.4)', borderLeft: '1px solid rgba(170,0,255,0.4)'
+              }} />
+              <div style={{
+                position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+                borderBottom: '1px solid rgba(170,0,255,0.4)', borderRight: '1px solid rgba(170,0,255,0.4)'
               }} />
 
-              <img
-                src={MainIcon}
-                alt="EmotiTrack Cybercore"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  filter: 'hue-rotate(280deg) brightness(1.2) contrast(1.1)',
-                  opacity: 0.8,
-                  maskImage: 'linear-gradient(to bottom, black 95%, transparent)',
-                  animation: 'glitchPulse 4s infinite'
-                }}
-              />
-
-              {/* Text label overlay */}
               <div style={{
-                position: 'absolute',
-                bottom: '10%',
-                left: 0,
-                right: 0,
-                textAlign: 'center',
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(4px)',
-                color: '#f0ccff',
-                fontFamily: 'Orbitron, monospace',
-                fontSize: '0.5rem',
-                letterSpacing: '0.3em',
-                padding: '4px 0',
-                borderTop: '1px solid rgba(170,0,255,0.3)',
-                borderBottom: '1px solid rgba(170,0,255,0.3)',
-                zIndex: 3
+                fontFamily: 'Share Tech Mono, monospace', fontSize: '0.6rem',
+                letterSpacing: '0.2em', color: 'rgba(170,0,255,0.5)',
+                marginBottom: '1.25rem', paddingBottom: '0.75rem',
+                borderBottom: '1px solid rgba(170,0,255,0.1)',
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
               }}>
-                NEURAL_LINK_ESTABLISHED
+                <Activity size={12} /> NEURAL DISTRIBUTION MATRIX
+              </div>
+
+              {summary.emotion_stats && summary.emotion_stats.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {summary.emotion_stats.map((stat, i) => (
+                    <EmotionBar key={stat.emotion} stat={stat} index={i} animate={animate} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState onNavigate={() => navigate('/dashboard')} />
+              )}
+            </div>
+
+            {/* Cyber Icon - Right */}
+            <div style={{
+              flex: 1,
+              background: 'rgba(19,0,32,0.9)',
+              border: '1px solid rgba(170,0,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+              minHeight: '220px',
+            }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 6, height: 6, borderTop: '1px solid #bf00ff', borderLeft: '1px solid #bf00ff' }} />
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 6, height: 6, borderBottom: '1px solid #bf00ff', borderRight: '1px solid #bf00ff' }} />
+              <div style={{
+                position: 'relative',
+                width: '85%',
+                height: '85%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                  background: 'rgba(191,0,255,0.4)', boxShadow: '0 0 10px #bf00ff',
+                  zIndex: 2, pointerEvents: 'none', animation: 'cyberScan 3s linear infinite'
+                }} />
+                <img
+                  src={MainIcon}
+                  alt="EmotiTrack Cybercore"
+                  style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                    filter: 'hue-rotate(280deg) brightness(1.2) contrast(1.1)',
+                    opacity: 0.8, maskImage: 'linear-gradient(to bottom, black 95%, transparent)',
+                    animation: 'glitchPulse 4s infinite'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute', bottom: '10%', left: 0, right: 0, textAlign: 'center',
+                  background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                  color: '#f0ccff', fontFamily: 'Orbitron, monospace', fontSize: '0.45rem',
+                  letterSpacing: '0.3em', padding: '4px 0', borderTop: '1px solid rgba(170,0,255,0.3)',
+                  borderBottom: '1px solid rgba(170,0,255,0.3)', zIndex: 3
+                }}>
+                  NEURAL_LINK_ESTABLISHED
+                </div>
               </div>
             </div>
           </div>

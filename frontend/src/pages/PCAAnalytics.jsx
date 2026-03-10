@@ -3,7 +3,6 @@ import usePCAData from "../hooks/usePCAData"
 import PCAScatter3D from "../components/pca/PCAScatter3D"
 import PCAVarianceSpectrum from "../components/pca/PCAVarianceSpectrum"
 import PCAInteligencePanel from "../components/pca/PCAInteligencePanel"
-import PCALegend from "../components/pca/PCALegend"
 
 
 
@@ -27,19 +26,15 @@ export default function PCAAnalytics() {
       <div className="pca-grid">
 
         <div className="pca-card pca-3d">
-          <PCAScatter3D data={data}/>
+          <PCAScatter3D data={data} />
         </div>
 
         <div className="pca-card">
-          <PCAVarianceSpectrum data={data}/>
+          <PCAVarianceSpectrum data={data} />
         </div>
 
         <div className="pca-card">
-          <PCAInteligencePanel data={data}/>
-        </div>
-
-        <div className="pca-card">
-          <PCALegend data={data}/>
+          <PCAInteligencePanel data={data} />
         </div>
 
       </div>
