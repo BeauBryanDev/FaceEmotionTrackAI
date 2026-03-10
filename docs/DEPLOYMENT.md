@@ -1,6 +1,6 @@
-# Deployment Guide — FaceEmotionTrackAI on AWS
+# Deployment Guide — Emotitron Web App on AWS
 
-This document describes how to deploy **FaceEmotionTrackAI** to production using:
+This document describes how to deploy **Emotitron** to production using:
 
 - **AWS ECS + Fargate** — containerized backend (FastAPI)
 - **AWS RDS (PostgreSQL + pgvector)** — managed database
@@ -391,3 +391,127 @@ On every push to `master`, GitHub Actions will:
 | ML models not loading | Models missing from S3 or wrong path | Re-run Step 11 and verify S3 paths match `task-definition.json` |
 | `vector` extension missing | pgvector not enabled on RDS | Re-run Step 1.3 |
 | Frontend 404 / blank page | `VITE_API_URL` incorrect or CloudFront cache stale | Check GitHub secret value; invalidate CloudFront distribution |
+
+
+## Create a Private Bicket to store ML models
+
+```bash
+aws s3api create-bucket \
+    --bucket emotitron-models-private \
+    --region us-east-1 \
+    --create-bucket-configuration LocationConstraint=us-east-1
+```
+
+## Apply S3 Bucket Policies
+
+```bash
+aws s3api put-bucket-policy \
+    --bucket emotitron-models-private \
+    --policy file://bucket-policy.json
+```
+
+## Confirm models are stored in S3
+
+```bash
+aws s3 ls s3://emotitron-models-private/ --recursive
+``` 
+
+
+## Endpoint 1 - SSM:
+```bash
+aws ec2 create-vpc-endpoint \
+    --vpc-id vpc-dfgjgfyjgyj5 \
+    --vpc-endpoint-type Interface \
+    --service-name com.amazonaws.us-east-1.ssmmessages \
+    --subnet-ids subnet-fghhjjj \
+    --security-group-ids sg-ccccccc \
+    --private-dns-enabled \
+    --region us-east-1
+```
+
+## Endpoint 2 - SSM Messages:
+
+```bash
+aws ec2 create-vpc-endpoint \
+    --vpc-id vpc-dfgjgfyjgyj5 \
+    --vpc-endpoint-type Interface \
+    --service-name com.amazonaws.us-east-1.ssmmessages \
+    --subnet-ids subnet-fghhjjj \
+    --security-group-ids sg-ccccccc \
+    --private-dns-enabled \
+    --region us-east-1
+```
+
+## Endpoint 3 - SSM Messages:
+
+```bash
+aws ec2 create-vpc-endpoint \
+    --vpc-id vpc-dfgjgfyjgyj5 \
+    --vpc-endpoint-type Interface \
+    --service-name com.amazonaws.us-east-1.ssmmessages \
+    --subnet-ids subnet-fghhjjj \
+    --security-group-ids sg-ccccccc \
+    --private-dns-enabled \
+    --region us-east-1
+```
+
+## Endpoint 4 - SSM Messages:
+
+```bash
+aws ec2 create-vpc-endpoint \
+    --vpc-id vpc-dfgjgfyjgyj5 \
+    --vpc-endpoint-type Interface \
+    --service-name com.amazonaws.us-east-1.ssmmessages \
+    --subnet-ids subnet-fghhjjj \
+    --security-group-ids sg-ccccccc \
+    --private-dns-enabled \
+    --region us-east-1
+```
+##  Check if all endpoints are avialable:
+
+```bash
+aws ec2 describe-vpc-endpoints \
+    --filters "Name=vpc-id,Values=vpc-dffggfgjh!" \
+    --query 'VpcEndpoints[*].{Service:ServiceName,State:State}' \
+    --region us-east-1
+
+```
+## Check if all endpoints are avialable:
+
+```bash
+aws ec2 describe-vpc-endpoints \
+    --filters "Name=vpc-id,Values=vpc-dffggfgjh!" \
+    --query 'VpcEndpoints[*].{Service:ServiceName,State:State}' \
+    --region us-east-1
+
+```
+
+## Check status of ECS service
+```bash
+aws ecs describe-services \
+    --cluster emotitron-cluster \
+    --services emotitron-backend-service \
+    --query 'services[0].{Status:status,Running:runningCount,Pending:pendingCount,Desired:desiredCount}' \
+    --region us-east-1
+
+```
+##  Check Tasks logs status
+
+```bash
+ aws ecs list-tasks \
+    --cluster emotitron-cluster \
+    --service-name emotitron-backend-service \
+    --region us-east-1 \
+    --query 'taskArns'
+```
+## Check Security Output to Internet 
+
+```bash
+aws ec2 describe-security-groups \
+    --group-ids sg-sdfghjkl \
+    --query 'SecurityGroups[0].{Inbound:IpPermissions,Outbound:IpPermissionsEgress}' \
+    --region us-east-1
+
+```
+
+

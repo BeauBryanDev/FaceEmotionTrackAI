@@ -219,7 +219,7 @@ jobs:
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html"
 
-          # index.html no debe cachearse en el CDN
+          # index.html do not cache in the CDN
           aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET }}/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
 
