@@ -1,5 +1,6 @@
 
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 import Header from '../components/common/Header'
@@ -124,7 +125,7 @@ const NAV_ITEMS = [
 // -----------------------------------------------------------------------------
 // SIDEBAR
 // -----------------------------------------------------------------------------
-const Sidebar = () => {
+const Sidebar = ({ onNavigate, isMobileOpen }) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -134,17 +135,9 @@ const Sidebar = () => {
   }
 
   return (
-    <aside style={{
-      position: 'fixed',
-      top: 0, left: 0, bottom: 0,
-      width: '240px',
-      background: 'linear-gradient(180deg, #130020 0%, #0d0010 100%)',
-      borderRight: '1px solid rgba(170,0,255,0.2)',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 100,
-      overflowY: 'auto',
-    }}>
+    <aside
+      className={`fixed inset-y-0 left-0 z-[100] flex w-64 flex-col overflow-y-auto border-r border-purple-800/30 bg-gradient-to-b from-[#130020] to-[#0d0010] transition-transform duration-200 md:static md:w-60 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+    >
 
       {/* Top edge glow */}
       <div style={{
@@ -226,6 +219,7 @@ const Sidebar = () => {
           <NavLink
             key={path}
             to={path}
+            onClick={() => onNavigate?.()}
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
@@ -353,56 +347,58 @@ const Sidebar = () => {
 // DASHBOARD LAYOUT
 
 // -----------------------------------------------------------------------------
-const DashboardLayout = () => (
-  <div style={{
-    display: 'flex',
-    minHeight: '100vh',
-    background: 'var(--purple-950)',
-  }}>
-    <Sidebar />
+const DashboardLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  return (
+    <div className="flex min-h-screen flex-col bg-[var(--purple-950)] md:flex-row">
+      <Sidebar
+        isMobileOpen={sidebarOpen}
+        onNavigate={() => setSidebarOpen(false)}
+      />
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-[90] bg-black/60 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
     {/* Right column */}
-    <div style={{
-      marginLeft: '240px',
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '100vh',
-    }}>
+    <div className="relative flex min-h-screen flex-1 flex-col md:ml-60">
 
       {/* Background grid fixed behind all content */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: '240px',
-        right: 0,
-        bottom: 0,
-        backgroundImage: `
+      <div
+        className="pointer-events-none fixed inset-y-0 left-0 right-0 md:left-60 z-0"
+        style={{
+          backgroundImage: `
           linear-gradient(rgba(170,0,255,0.025) 1px, transparent 1px),
           linear-gradient(90deg, rgba(170,0,255,0.025) 1px, transparent 1px)
         `,
-        backgroundSize: '40px 40px',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }} />
+          backgroundSize: '40px 40px',
+        }}
+      />
 
       {/* Header sticky at top of right column */}
-      <Header />
+      <Header onMenuClick={() => setSidebarOpen((open) => !open)} />
 
       {/* Page content fills remaining vertical space */}
-      <main style={{
-        flex: 1,
-        padding: '2rem',
-        position: 'relative',
-        zIndex: 1,
-      }}>
+      <main className="relative z-10 flex-1 p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>
 
       {/* Footer always at bottom of right column */}
       <Footer />
     </div>
-  </div>
-)
+    </div>
+  )
+}
 
 export default DashboardLayout

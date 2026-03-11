@@ -67,12 +67,12 @@ const History = () => {
   };
 
   return (
-    <div className="p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid font-body flex flex-col gap-6">
+    <div className="p-4 sm:p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid font-body flex flex-col gap-6">
       
       {/* CABECERA DEL MÓDULO */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-purple-800 pb-4">
         <div>
-          <h1 className="text-2xl font-display font-black text-purple-200 tracking-widest flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-display font-black text-purple-200 tracking-widest flex items-center gap-3">
             <Database className="w-6 h-6 text-neon-purple" />
             TELEMETRY ARCHIVE
           </h1>
@@ -82,7 +82,7 @@ const History = () => {
         </div>
 
         {/* CONTROLES DE FILTRADO */}
-        <div className="flex items-center gap-2 bg-surface-1 border border-purple-700 p-2 shadow-neon-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-surface-1 border border-purple-700 p-2 shadow-neon-sm w-full sm:w-auto">
           <Filter className="w-4 h-4 text-purple-400" />
           <span className="font-mono text-xs text-purple-300 mr-2">STATE_FILTER:</span>
           <select 

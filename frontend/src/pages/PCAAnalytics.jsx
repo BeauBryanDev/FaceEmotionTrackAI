@@ -16,9 +16,9 @@ export default function PCAAnalytics() {
 
   return (
 
-    <div className="pca-dashboard">
+    <div className="pca-dashboard p-4 sm:p-6">
 
-      <header className="pca-header">
+      <header className="pca-header text-center sm:text-left">
         <h1>PCA Emotional Embedding Space</h1>
         <p>Dimensionality reduction of emotion embeddings</p>
       </header>

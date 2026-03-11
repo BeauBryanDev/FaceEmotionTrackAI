@@ -16,7 +16,7 @@ const EmotionIntelligencePanel = ({ timeline }) => {
 
   return (
 
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       <div className="bg-purple-950 border border-purple-800 p-3">
         <EntropyTrendChart data={timeline} />
@@ -34,16 +34,11 @@ const EmotionIntelligencePanel = ({ timeline }) => {
         <EmotionVolatility data={timeline} />
       </div>
 
-      <div className="bg-purple-950 border border-purple-800 p-3 col-span-2">
+      <div className="bg-purple-950 border border-purple-800 p-3 md:col-span-2">
         <PredictionStability data={timeline} />
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "16px",
-        width: "100%"
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
 
         <div className="bg-purple-950 border border-purple-800 p-3">
           <EmotionRadar emotionScores={timeline[timeline.length - 1]?.emotion_scores} />
@@ -59,7 +54,7 @@ const EmotionIntelligencePanel = ({ timeline }) => {
 
       </div>
 
-      <div className="bg-purple-950 border border-purple-800 p-3 col-span-2">
+      <div className="bg-purple-950 border border-purple-800 p-3 md:col-span-2">
         <EmotionTemporalSignalGraph data={{
           happy_score: timeline[timeline.length - 1]?.emotion_scores?.Happiness || 0
         }} />

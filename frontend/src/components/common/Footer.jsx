@@ -34,13 +34,7 @@ const Ticker = () => {
   }, [])
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      overflow: 'hidden',
-      maxWidth: '340px',
-    }}>
+    <div className="flex items-center gap-2 overflow-hidden max-w-full sm:max-w-[340px]">
       <span style={{
         fontFamily: 'Share Tech Mono, monospace',
         fontSize: '0.55rem',
@@ -102,17 +96,7 @@ const Footer = () => {
       : 'BACKEND OFFLINE'
 
   return (
-    <footer style={{
-      height: '40px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 2rem',
-      background: 'rgba(13,0,16,0.9)',
-      borderTop: '1px solid rgba(170,0,255,0.12)',
-      flexShrink: 0,
-      position: 'relative',
-    }}>
+    <footer className="relative flex flex-col gap-2 border-t border-purple-800/20 bg-[rgba(13,0,16,0.9)] px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 
       {/* Top glow line */}
       <div style={{
@@ -126,14 +110,7 @@ const Footer = () => {
       <Ticker />
 
       {/* Center - tech stack */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        alignItems: 'center',
-        position: 'absolute',
-        left: '50%',
-        transform: 'translateX(-50%)',
-      }}>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
         {['FastAPI', 'ONNX', 'pgvector', 'React'].map((tag) => (
           <span key={tag} style={{
             fontFamily: 'Share Tech Mono, monospace',
@@ -150,11 +127,7 @@ const Footer = () => {
       </div>
 
       {/* Right - backend status + version */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-      }}>
+      <div className="flex flex-wrap items-center gap-3">
         {/* Backend status */}
         <div style={{
           display: 'flex',

@@ -4,9 +4,9 @@ import emotitrackicon from '../assets/emotitrackincon.jpg';
 
 const About = () => {
     return (
-        <div className="p-6 min-h-screen bg-black flex flex-col items-center gap-8 overflow-y-auto">
+        <div className="p-4 sm:p-6 min-h-screen bg-black flex flex-col items-center gap-8 overflow-y-auto">
             {/* Container with neon borders */}
-            <div className="w-full max-w-4xl border border-violet-800 bg-surface-0 p-8 shadow-[0_0_15px_rgba(139,92,246,0.3)] relative group">
+            <div className="w-full max-w-4xl border border-violet-800 bg-surface-0 p-4 sm:p-8 shadow-[0_0_15px_rgba(139,92,246,0.3)] relative group">
 
                 {/* Neon Corners */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-neon-violet group-hover:shadow-[0_0_10px_#9d00ff] transition-all" />
@@ -20,12 +20,12 @@ const About = () => {
                         <img
                             src={emotitrackicon}
                             alt="EMOTITRACK BRAND"
-                            className="w-48 h-48 md:w-64  md:h-64 object-cover relative z-10 border border-purple-900 rounded-lg"
+                            className="w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 object-cover relative z-10 border border-purple-900 rounded-lg"
                             style={{ boxShadow: '0 0 20px rgba(170, 0, 255, 0.4)' }}
                         />
                     </div>
 
-                    <Text variant="h1" glow className="text-5xl md:text-6xl text-center mb-2">
+                    <Text variant="h1" glow className="text-3xl sm:text-5xl md:text-6xl text-center mb-2">
                         EMOTITRACK
                     </Text>
                     <Text variant="mono" className="text-purple-400 font-bold tracking-[0.4em] uppercase text-xs">
@@ -69,7 +69,7 @@ const About = () => {
 
                     <section>
                         <Text variant="h3" className="mb-4 border-b border-purple-900 pb-2">Core_Protocol_Stack</Text>
-                        <div className="grid grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
                             <div>
                                 <Text variant="subtext" className="mb-2 text-purple-500">BACKEND</Text>
                                 <Text variant="mono" className="text-[11px] leading-tight text-purple-300">
@@ -99,7 +99,7 @@ const About = () => {
                     </section>
 
                     {/* Footer decor */}
-                    <div className="mt-12 pt-6 border-t border-purple-900/40 flex justify-between text-[8px] font-mono text-purple-600 tracking-widest uppercase">
+                    <div className="mt-12 pt-6 border-t border-purple-900/40 flex flex-col sm:flex-row sm:justify-between gap-2 text-[8px] font-mono text-purple-600 tracking-widest uppercase">
                         <span>Authored_By: BeauBryanDev</span>
                         <span>SYSTEM_STATUS: SECURE</span>
                         <span>BUILD: v1.0.4-PROTO</span>

@@ -108,30 +108,31 @@ const UserAvatar = ({ user, hasEmbedding }) => {
 // -----------------------------------------------------------------------------
 // HEADER
 // -----------------------------------------------------------------------------
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const { user }   = useAuth()
   const { hasEmbedding } = useBiometrics()
   const location   = useLocation()
   const pageInfo   = PAGE_TITLES[location.pathname] || { title: 'SYSTEM', sub: 'FACETRACK_AI' }
 
   return (
-    <header style={{
-      height: '64px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 2rem',
-      background: 'rgba(13,0,16,0.85)',
-      borderBottom: '1px solid rgba(170,0,255,0.15)',
-      backdropFilter: 'blur(8px)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 50,
-      flexShrink: 0,
-    }}>
+    <header className="relative sticky top-0 z-50 w-full border-b border-purple-800/30 bg-[rgba(13,0,16,0.85)] backdrop-blur-md flex flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8 md:flex-row md:items-center md:justify-between">
 
       {/* Left - page title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div className="flex items-center gap-3">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="md:hidden inline-flex h-8 w-8 items-center justify-center border border-purple-700/60 bg-purple-950/40 text-purple-200 hover:border-neon-purple/80"
+            aria-label="Open menu"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
         {/* Vertical accent bar */}
         <div style={{
           width: '2px',
@@ -166,18 +167,10 @@ const Header = () => {
       </div>
 
       {/* Right - clock + status indicators + avatar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1.5rem',
-      }}>
+      <div className="flex w-full flex-wrap items-center gap-4 md:w-auto md:flex-nowrap md:gap-6">
 
         {/* System metrics */}
-        <div style={{
-          display: 'flex',
-          gap: '1.25rem',
-          alignItems: 'center',
-        }}>
+        <div className="flex items-center gap-4">
           {[
             { label: 'MODELS', value: '4/4', ok: true },
             { label: 'STREAM', value: 'READY', ok: true },
@@ -205,21 +198,13 @@ const Header = () => {
         </div>
 
         {/* Divider */}
-        <div style={{
-          width: '1px',
-          height: '32px',
-          background: 'rgba(170,0,255,0.2)',
-        }} />
+        <div className="hidden sm:block w-px h-8 bg-purple-800/40" />
 
         {/* Clock */}
         <SystemClock />
 
         {/* Divider */}
-        <div style={{
-          width: '1px',
-          height: '32px',
-          background: 'rgba(170,0,255,0.2)',
-        }} />
+        <div className="hidden sm:block w-px h-8 bg-purple-800/40" />
 
         {/* User avatar */}
         <UserAvatar user={user} hasEmbedding={hasEmbedding} />

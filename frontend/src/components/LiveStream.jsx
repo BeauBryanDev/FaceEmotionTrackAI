@@ -117,16 +117,16 @@ const LiveStream = () => {
 
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid font-body">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid font-body">
 
       {/* left panel */}
       <div className="flex-1 flex flex-col items-center">
-        <div className="mb-4 flex items-center justify-between w-full max-w-[640px]">
-          <h2 className="text-xl font-display font-bold text-purple-200 tracking-widest flex items-center gap-2">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between w-full max-w-[640px] gap-3">
+          <h2 className="text-lg sm:text-xl font-display font-bold text-purple-200 tracking-widest flex items-center gap-2">
             <Activity className={`w-5 h-5 ${isConnected ? 'text-neon-purple animate-pulse' : 'text-red-500'}`} />
             OPTICAL SENSOR FEED
           </h2>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <span className={`font-mono text-xs px-2 py-1 border ${isConnected ? 'border-neon-purple bg-purple-900 text-neon-purple shadow-neon-sm' : 'border-red-900 bg-red-950 text-red-500'}`}>
               {isConnected ? 'UPLINK_ESTABLISHED' : 'LINK_SEVERED'}
             </span>
@@ -501,7 +501,7 @@ const LiveStream = () => {
           <div className="text-purple-400 font-mono text-xs mb-3 flex items-center gap-2">
             <Eye className="w-3 h-3" /> SPATIAL & OCULAR METRICS
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* EYEs */}
             <div className="flex flex-col gap-1 border-r border-purple-800/50 pr-2">
               <span className="text-purple-500 font-mono text-[10px]">EYE STATE</span>

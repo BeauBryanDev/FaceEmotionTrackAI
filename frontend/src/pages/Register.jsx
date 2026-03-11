@@ -162,10 +162,10 @@ const Register = () => {
   }
 
   return (
-    <div style={{ width: '100%', animation: 'slideInFromBottom 0.4s ease-out' }}>
+    <div className="w-full" style={{ animation: 'slideInFromBottom 0.4s ease-out' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
+      <div style={{ marginBottom: '1.75rem' }}>
         <div style={{
           fontFamily: 'Share Tech Mono, monospace',
           fontSize: '0.65rem',
@@ -178,12 +178,13 @@ const Register = () => {
         </div>
         <h2 style={{
           fontFamily: 'Orbitron, monospace',
-          fontSize: '1.8rem',
+          fontSize: 'clamp(1.4rem, 5.5vw, 1.8rem)',
           fontWeight: 900,
           color: '#f0ccff',
           letterSpacing: '0.1em',
           margin: 0,
           textShadow: '0 0 20px rgba(170,0,255,0.3)',
+          lineHeight: 1.05,
         }}>
           NEW<br />
           <span style={{ color: '#bf00ff', textShadow: '0 0 20px rgba(170,0,255,0.6)' }}>
@@ -196,8 +197,9 @@ const Register = () => {
       <div style={{
         display: 'flex',
         alignItems: 'center',
+        flexWrap: 'wrap',
         gap: '0.5rem',
-        marginBottom: '1.5rem',
+        marginBottom: '1.25rem',
         padding: '0.5rem 0.75rem',
         background: 'rgba(170,0,255,0.05)',
         border: '1px solid rgba(170,0,255,0.15)',
@@ -214,7 +216,7 @@ const Register = () => {
         }} />
         <span style={{
           fontFamily: 'Share Tech Mono, monospace',
-          fontSize: '0.65rem',
+          fontSize: 'clamp(0.55rem, 2.4vw, 0.65rem)',
           letterSpacing: '0.15em',
           color: phase === 'SUCCESS' ? '#00ff88' : 'rgba(170,0,255,0.7)',
         }}>
@@ -225,7 +227,7 @@ const Register = () => {
       {/* Form */}
       <form
         onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}
       >
         {FIELDS.map((field) => (
           <div key={field.name}>
@@ -253,7 +255,7 @@ const Register = () => {
                 onBlur={() => setFocusedField(null)}
                 style={{
                   width: '100%',
-                  padding: '0.7rem 1rem',
+                  padding: '0.65rem 0.9rem',
                   background: focusedField === field.name
                     ? 'rgba(45,0,87,0.5)'
                     : 'rgba(45,0,87,0.3)',
@@ -265,7 +267,7 @@ const Register = () => {
                     }`,
                   color: form[field.name] ? '#f0ccff' : 'rgba(240,204,255,0.4)',
                   fontFamily: 'Share Tech Mono, monospace',
-                  fontSize: '0.85rem',
+                  fontSize: 'clamp(0.78rem, 2.6vw, 0.85rem)',
                   outline: 'none',
                   appearance: 'none',
                   WebkitAppearance: 'none',
@@ -300,7 +302,7 @@ const Register = () => {
                 max={field.max}
                 style={{
                   width: '100%',
-                  padding: '0.7rem 1rem',
+                  padding: '0.65rem 0.9rem',
                   background: focusedField === field.name
                     ? 'rgba(45,0,87,0.5)'
                     : 'rgba(45,0,87,0.3)',
@@ -312,7 +314,7 @@ const Register = () => {
                     }`,
                   color: '#f0ccff',
                   fontFamily: 'Share Tech Mono, monospace',
-                  fontSize: '0.85rem',
+                  fontSize: 'clamp(0.78rem, 2.6vw, 0.85rem)',
                   outline: 'none',
                   transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
                   boxShadow: focusedField === field.name
@@ -373,14 +375,14 @@ const Register = () => {
           style={{
             marginTop: '0.5rem',
             width: '100%',
-            padding: '0.85rem',
+            padding: '0.75rem',
             background: loading
               ? 'rgba(170,0,255,0.15)'
               : 'linear-gradient(135deg, rgba(102,0,179,0.8), rgba(170,0,255,0.8))',
             border: '1px solid rgba(170,0,255,0.6)',
             color: loading ? 'rgba(240,204,255,0.4)' : '#f0ccff',
             fontFamily: 'Orbitron, monospace',
-            fontSize: '0.7rem',
+            fontSize: 'clamp(0.6rem, 2.4vw, 0.7rem)',
             fontWeight: 700,
             letterSpacing: '0.25em',
             textTransform: 'uppercase',
@@ -409,7 +411,7 @@ const Register = () => {
       <div style={{
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(170,0,255,0.3), transparent)',
-        margin: '1.5rem 0',
+        margin: '1.25rem 0',
       }} />
 
       {/* Login link */}

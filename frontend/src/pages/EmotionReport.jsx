@@ -170,24 +170,24 @@ const EmotionReport = () => {
 
   return (
 
-  <div className="p-6 flex flex-col gap-6">
+  <div className="p-4 sm:p-6 flex flex-col gap-6">
 
   {/* Header */}
 
-  <div className="flex justify-between items-end border-b border-purple-800 pb-4">
+  <div className="flex flex-col md:flex-row md:justify-between md:items-end border-b border-purple-800 pb-4 gap-3">
 
     <div>
       <div className="text-xs font-mono text-purple-500">
         SYSTEM / EMOTION ANALYSIS
       </div>
 
-      <h1 className="text-2xl text-purple-200 font-bold flex items-center gap-2">
+      <h1 className="text-xl sm:text-2xl text-purple-200 font-bold flex items-center gap-2">
         <Activity size={18}/>
         EMOTION REPORT
       </h1>
     </div>
 
-    <div className="font-mono text-sm text-purple-400">
+    <div className="font-mono text-xs sm:text-sm text-purple-400">
       TOTAL DETECTIONS: {summary?.total_detections}
     </div>
 
@@ -195,7 +195,7 @@ const EmotionReport = () => {
 
   {/* Row 1 */}
 
-  <div className="grid lg:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
     <Card>
 
@@ -203,7 +203,7 @@ const EmotionReport = () => {
         DOMINANT EMOTION
       </div>
 
-      <div className="text-4xl text-neon-purple font-bold">
+      <div className="text-3xl sm:text-4xl text-neon-purple font-bold">
         {summary?.dominant_emotion}
       </div>
 
@@ -235,7 +235,7 @@ const EmotionReport = () => {
 
   {/* Row 2 */}
 
-  <div className="grid lg:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
     <Card>
 
@@ -303,7 +303,8 @@ const EmotionReport = () => {
 
   </div>
 
-  <table className="w-full text-left">
+  <div className="overflow-x-auto">
+  <table className="w-full text-left min-w-[640px]">
   <thead>
   <tr className="text-xs font-mono text-purple-400 border-b border-purple-800">
   <th className="p-2">ID</th>
@@ -320,6 +321,7 @@ const EmotionReport = () => {
   </tbody>
 
   </table>
+  </div>
 
   <div className="flex justify-end gap-2 mt-4">
 

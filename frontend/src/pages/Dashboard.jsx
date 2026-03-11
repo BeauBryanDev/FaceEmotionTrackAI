@@ -436,17 +436,13 @@ const Dashboard = () => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="flex flex-col gap-6">
 
       {/* Page header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        paddingBottom: '1.25rem',
-        borderBottom: '1px solid rgba(168, 86, 209, 0.15)',
-        animation: 'fadeSlideIn 0.3s ease-out',
-      }}>
+      <div
+        className="flex flex-col gap-4 border-b border-purple-800/30 pb-5 md:flex-row md:items-end md:justify-between"
+        style={{ animation: 'fadeSlideIn 0.3s ease-out' }}
+      >
         <div>
           <div style={{
             fontFamily: 'Share Tech Mono, monospace',
@@ -474,7 +470,7 @@ const Dashboard = () => {
         </div>
 
         {/* Refresh control */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+        <div className="flex flex-col items-start md:items-end gap-1">
           <button
             onClick={handleRefresh}
             disabled={loading}
@@ -527,15 +523,10 @@ const Dashboard = () => {
 
       {/* Main content */}
       {!loading && !error && summary && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(250px, 1fr) minmax(280px, 1.1fr) 280px',
-          gridTemplateRows: 'auto auto auto auto',
-          gap: '1.25rem',
-        }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:grid-cols-[minmax(250px,1fr)_minmax(280px,1.1fr)_280px]">
 
           {/* COLUMN 1: NEURAL STATS STACK */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div className="flex flex-col gap-5">
             <MetricCard
               label="TOTAL BIOMETRIC SCANS"
               value={summary.total_detections ?? 0}
@@ -550,14 +541,13 @@ const Dashboard = () => {
           </div>
 
           {/* COLUMN 2: SESSION & ACTIONS */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div className="flex flex-col gap-5">
             <SessionPanel user={user} />
 
-            <div style={{
-              display: 'flex',
-              gap: '0.75rem',
-              animation: 'fadeSlideIn 0.4s ease-out 0.15s both',
-            }}>
+            <div
+              className="flex flex-col sm:flex-row gap-3"
+              style={{ animation: 'fadeSlideIn 0.4s ease-out 0.15s both' }}
+            >
               <button
                 onClick={() => navigate('/dashboard')}
                 style={{
@@ -623,17 +613,15 @@ const Dashboard = () => {
           </div>
 
           {/* COLUMN 3: TEMPORAL HUD (TOP RIGHT) */}
-          <div style={{ gridColumn: '3', gridRow: '1 / 3' }}>
+          <div className="lg:col-start-3 lg:row-span-2">
             <CyberCalendar />
           </div>
 
           {/* FULL WIDTH BOTTOM: MATRIX & ICON HUD SIDE-BY-SIDE */}
-          <div style={{
-            gridColumn: '1 / 4',
-            display: 'flex',
-            gap: '1.25rem',
-            animation: 'fadeSlideIn 0.4s ease-out 0.25s both',
-          }}>
+          <div
+            className="flex flex-col gap-5 lg:col-span-3 lg:flex-row"
+            style={{ animation: 'fadeSlideIn 0.4s ease-out 0.25s both' }}
+          >
             {/* Neural Distribution Matrix - Left */}
             <div style={{
               flex: 2,
@@ -762,4 +750,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-

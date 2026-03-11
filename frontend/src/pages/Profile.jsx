@@ -570,7 +570,7 @@ const Profile = () => {
         />
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className="flex flex-col gap-6">
 
         {/* Page header */}
         <div style={{
@@ -588,7 +588,7 @@ const Profile = () => {
           </div>
           <h1 style={{
             fontFamily: 'Orbitron, monospace',
-            fontSize: '1.5rem',
+            fontSize: 'clamp(1.2rem, 4.5vw, 1.5rem)',
             fontWeight: 900,
             color: '#f0ccff',
             letterSpacing: '0.15em',
@@ -603,12 +603,7 @@ const Profile = () => {
         </div>
 
         {/* Two column layout on large screens */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: '1.5rem',
-          alignItems: 'start',
-        }}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(320px,1fr)_minmax(320px,1fr)] lg:items-start">
 
           {/* LEFT - Profile form */}
           <SectionCard>
@@ -648,7 +643,7 @@ const Profile = () => {
             >
               <Field label="Full Name" name="full_name" value={form.full_name} onChange={onChange} />
               <Field label="Email" name="email" value={form.email} onChange={onChange} type="email" />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Age" name="age" value={form.age} onChange={onChange} type="number" />
                 <SelectField
                   label="Gender"

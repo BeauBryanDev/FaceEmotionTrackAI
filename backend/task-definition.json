@@ -1,7 +1,9 @@
 {
   "family": "emotitron-backend-task",
   "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
   "cpu": "1024",
   "memory": "2048",
   "executionRoleArn": "arn:aws:iam::401257550058:role/emotitron-task-execution-role",
@@ -38,7 +40,7 @@
       ],
       "secrets": [
         {
-          "name": "DATABASE_URL",
+          "name": "DATABASE_URL_OVERRIDE",
           "valueFrom": "arn:aws:ssm:us-east-1:401257550058:parameter/emotitron/DATABASE_URL"
         },
         {

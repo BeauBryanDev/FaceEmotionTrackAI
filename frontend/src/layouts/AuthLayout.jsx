@@ -193,6 +193,7 @@ const BrandPanel = () => (
         gap: '2rem',
         justifyContent: 'center',
         marginBottom: '2rem',
+        flexWrap: 'wrap',
       }}>
         {[
           { label: 'MODELS', value: '4' },
@@ -282,11 +283,7 @@ const BrandPanel = () => (
 // AUTH LAYOUT
 // -----------------------------------------------------------------------------
 const AuthLayout = () => (
-  <div style={{
-    display: 'flex',
-    minHeight: '100vh',
-    background: 'var(--purple-950)',
-  }}>
+  <div className="flex min-h-screen flex-col bg-[var(--purple-950)] md:flex-row">
     {/* Left - Brand panel (hidden on mobile) */}
     <div style={{ display: 'flex', flex: '0 0 50%' }}
       className="hidden md:flex">
@@ -294,17 +291,7 @@ const AuthLayout = () => (
     </div>
 
     {/* Right - Form panel */}
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-      background: 'linear-gradient(180deg, #0d0010 0%, #130020 100%)',
-      position: 'relative',
-      overflowY: 'auto',
-    }}>
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-y-auto bg-gradient-to-b from-[#0d0010] to-[#130020] px-4 py-8 sm:px-6 md:px-10">
       {/* Subtle background grid */}
       <div style={{
         position: 'absolute',
@@ -320,11 +307,11 @@ const AuthLayout = () => (
       {/* Mobile brand header */}
       <div className="flex md:hidden" style={{
         position: 'absolute',
-        top: '1.5rem',
+        top: '1.25rem',
         left: '50%',
         transform: 'translateX(-50%)',
         fontFamily: 'Orbitron, monospace',
-        fontSize: '1rem',
+        fontSize: '0.9rem',
         fontWeight: 900,
         color: '#bf00ff',
         textShadow: '0 0 12px rgba(170,0,255,0.5)',
@@ -340,6 +327,7 @@ const AuthLayout = () => (
         zIndex: 1,
         width: '100%',
         maxWidth: '420px',
+        paddingTop: '3.5rem',
       }}>
         <Outlet />
       </div>

@@ -91,7 +91,7 @@ const Emotions = () => {
   }
 
   return (
-    <div className="p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid flex flex-col gap-6 relative overflow-hidden">
+    <div className="p-4 sm:p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid flex flex-col gap-6 relative overflow-hidden">
 
       {/* HEADER DECOR */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-neon-purple/5 blur-[120px] pointer-events-none" />
@@ -102,33 +102,33 @@ const Emotions = () => {
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
             <div className="w-1 h-6 bg-neon-purple shadow-neon-sm" />
-            <Text variant="h2" className="tracking-tighter text-3xl">NEURAL_EMOTION_HUD</Text>
+            <Text variant="h2" className="tracking-tighter text-2xl sm:text-3xl">NEURAL_EMOTION_HUD</Text>
           </div>
           <Text variant="mono" className="text-purple-500 text-[10px] tracking-[0.2em] ml-4">SYSTEM_STATUS: ACTIVE // DATA_FLOW: STABLE</Text>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col items-end">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          <div className="flex flex-col sm:items-end">
             <span className="text-[10px] font-mono text-purple-500 uppercase tracking-widest">Aggregate Detections</span>
-            <span className="text-2xl font-display text-neon-purple glow-sm">{summary?.total_detections || 0}</span>
+            <span className="text-xl sm:text-2xl font-display text-neon-purple glow-sm">{summary?.total_detections || 0}</span>
           </div>
-          <div className="h-10 w-[1px] bg-purple-800/50" />
-          <div className="flex flex-col items-end">
+          <div className="hidden sm:block h-10 w-[1px] bg-purple-800/50" />
+          <div className="flex flex-col sm:items-end">
             <span className="text-[10px] font-mono text-purple-500 uppercase tracking-widest">Dominant State</span>
-            <span className="text-2xl font-display text-neon-purple glow-sm">{(summary?.dominant_emotion || 'N/A').toUpperCase()}</span>
+            <span className="text-xl sm:text-2xl font-display text-neon-purple glow-sm">{(summary?.dominant_emotion || 'N/A').toUpperCase()}</span>
           </div>
         </div>
       </div>
 
       {/* MAIN COMMAND GRID */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
 
         {/* COLUMN 1: RADAR & SENTIMENT */}
         <div className="flex flex-col gap-6">
           {/* RADAR CORE */}
           <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative group">
             <div className="absolute -top-[1px] -left-[1px] w-6 h-6 border-t border-l border-neon-purple z-10" />
-            <div className="p-4 flex flex-col h-[400px]">
+            <div className="p-4 flex flex-col h-[320px] sm:h-[400px]">
               <div className="flex items-center justify-between mb-4">
                 <Text variant="subtext" className="text-[10px] text-purple-400">01 // NEURAL_RADAR</Text>
                 <div className="flex gap-1">
@@ -143,7 +143,7 @@ const Emotions = () => {
 
           {/* SENTIMENT DOUGHNUT */}
           <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative overflow-hidden">
-            <div className="p-4 flex flex-col h-[320px]">
+            <div className="p-4 flex flex-col h-[260px] sm:h-[320px]">
               <Text variant="subtext" className="text-[10px] text-purple-400 mb-2">02 // SENTIMENT_INDEX</Text>
               <div className="flex-1">
                 <SentimentDoughnut stats={summary?.emotion_stats} />
@@ -153,7 +153,7 @@ const Emotions = () => {
 
           {/* CONFIDENCE RADAR */}
           <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative">
-            <div className="p-4 flex flex-col h-[220px]">
+            <div className="p-4 flex flex-col h-[240px] sm:h-[320px]">
               <Text variant="subtext" className="text-[10px] text-purple-400 mb-2">
                 02 // MODEL_CONFIDENCE
               </Text>
@@ -169,7 +169,7 @@ const Emotions = () => {
         <div className="flex flex-col gap-6">
           {/* PIE DISTRIBUTION */}
           <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative">
-            <div className="p-4 flex flex-col h-[300px]">
+            <div className="p-4 flex flex-col h-[260px] sm:h-[300px]">
               <Text variant="subtext" className="text-[10px] text-purple-400 mb-2">03 // CLASS_DISTRIBUTION</Text>
               <div className="flex-1">
                 <EmotionDistributionPie data={summary?.emotion_stats} />
@@ -179,7 +179,7 @@ const Emotions = () => {
 
           {/* HISTOGRAM */}
           <div className="bg-surface-1/40 border border-purple-800/40 p-1 relative">
-            <div className="p-4 flex flex-col h-[320px]">
+            <div className="p-4 flex flex-col h-[260px] sm:h-[320px]">
               <div className="flex items-center justify-between mb-4">
                 <Text variant="subtext" className="text-[10px] text-purple-400">04 // INTENSITY_HISTOGRAM</Text>
                 <select

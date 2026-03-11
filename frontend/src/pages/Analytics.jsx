@@ -241,7 +241,7 @@ const Analytics = () => {
   const currentUserPts = points.filter((p) => p.is_current_user).length;
 
   return (
-    <div className="p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid flex flex-col gap-6">
+    <div className="p-4 sm:p-6 min-h-[calc(100vh-80px)] bg-surface-0 bg-cyber-grid flex flex-col gap-6">
       
       {/* GLOBAL GLOW ANIMATIONS */}
       <style>{`
@@ -251,7 +251,7 @@ const Analytics = () => {
       `}</style>
 
       {/* V1 HEADER RETAINED AND UPGRADED */}
-      <div className="border-b border-purple-800 pb-4 flex justify-between items-end">
+      <div className="border-b border-purple-800 pb-4 flex flex-col md:flex-row md:justify-between md:items-end gap-3">
         <div>
           <Text variant="h2" glow className="flex items-center gap-3 text-purple-100">
             <Target className="w-7 h-7 text-neon-purple" />
@@ -272,7 +272,7 @@ const Analytics = () => {
       </div>
 
       {loading && (
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[260px] sm:min-h-[400px]">
           <BarChart2 className="w-12 h-12 text-neon-purple animate-pulse mb-4" />
           <Text variant="mono" className="text-purple-400 animate-pulse tracking-[0.3em]">
             COMPUTING EIGENVECTORS...
@@ -288,7 +288,7 @@ const Analytics = () => {
 
       {pcaHint && !loading && (
         <TacticalCard className="border-yellow-900/50 bg-yellow-900/10">
-          <div className="flex gap-4 items-start">
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
             <Info className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
             <div>
               <Text variant="mono" className="text-yellow-400 mb-1">{pcaHint}</Text>
